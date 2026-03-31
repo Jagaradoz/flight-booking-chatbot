@@ -1,0 +1,22 @@
+info:
+  name: chat-missing-body
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8000/api/chat
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {}
+
+assert:
+  - expr: res.status == 422
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

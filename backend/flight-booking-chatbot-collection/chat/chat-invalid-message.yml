@@ -1,0 +1,25 @@
+info:
+  name: chat-invalid-message
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8000/api/chat
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "message": ""
+      }
+
+assert:
+  - expr: res.status == 200
+  - expr: res.body.response != null
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

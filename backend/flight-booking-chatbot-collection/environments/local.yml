@@ -1,0 +1,6 @@
+info:
+  name: local
+  type: environment
+
+variables:
+  baseUrl: http://localhost:8000
