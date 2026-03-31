@@ -1,13 +1,15 @@
 import { Flight } from '@/types';
 import { Card, CardContent } from './ui/card';
-import { Plane, Clock } from 'lucide-react';
+import { Button } from './ui/button';
+import { Plane, Clock, Eye, Ticket } from 'lucide-react';
 
 interface FlightTableProps {
   flights: Flight[];
   onFlightSelect?: (flightId: string) => void;
+  onBookFlight?: (flightId: string) => void;
 }
 
-export function FlightTable({ flights, onFlightSelect }: FlightTableProps) {
+export function FlightTable({ flights, onFlightSelect, onBookFlight }: FlightTableProps) {
   if (flights.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -30,7 +32,7 @@ export function FlightTable({ flights, onFlightSelect }: FlightTableProps) {
       </div>
       <div className="space-y-3 sm:space-y-4">
         {flights.map((flight) => (
-          <Card key={flight.flight_id} className="border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => onFlightSelect?.(flight.flight_id)}>
+          <Card key={flight.flight_id} className="overflow-hidden border-border transition-colors hover:border-primary/30">
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start mb-4 sm:mb-5">
                 <div className="space-y-0.5">
@@ -72,6 +74,26 @@ export function FlightTable({ flights, onFlightSelect }: FlightTableProps) {
                 <div className="text-xs sm:text-sm text-muted-foreground">
                   {flight.date}
                 </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end pt-4 border-t border-border/60">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="sm:min-w-28"
+                  onClick={() => onFlightSelect?.(flight.flight_id)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View
+                </Button>
+                <Button
+                  type="button"
+                  className="sm:min-w-28"
+                  onClick={() => onBookFlight?.(flight.flight_id)}
+                >
+                  <Ticket className="mr-2 h-4 w-4" />
+                  Book
+                </Button>
               </div>
             </CardContent>
           </Card>

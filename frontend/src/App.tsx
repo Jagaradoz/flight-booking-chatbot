@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { ChatInput } from './components/ChatInput';
 import { RightPanel } from './components/RightPanel';
-import { sendMessage, resetConversation, checkHealth } from './lib/api';
+import { sendMessage, resetConversation, checkHealth, fetchFlights } from './lib/api';
 import type { ToolData } from './lib/api';
 import { Message, Flight, Seat, SeatMap, Booking } from './types';
 
@@ -23,8 +23,33 @@ function App() {
   const activeViewKeyRef = useRef(0);
   const selectedFlightIdRef = useRef<string | null>(null);
 
+  const mapFlights = (rawFlights: Record<string, unknown>[]): Flight[] => (
+    rawFlights.map((flight) => ({
+      flight_id: flight.flight_id as string,
+      airline: flight.airline as string,
+      origin: flight.origin as string,
+      destination: flight.destination as string,
+      departure_time: flight.departure_time as string,
+      arrival_time: flight.arrival_time as string,
+      duration: flight.duration as string,
+      price: (flight.price_per_passenger ?? flight.price) as number,
+      aircraft: flight.aircraft as string,
+      date: (flight.date as string) || '',
+    }))
+  );
+
+  const loadInitialFlights = async () => {
+    try {
+      const rawFlights = await fetchFlights();
+      setFlights(mapFlights(rawFlights));
+    } catch (error) {
+      console.error('Failed to load flights:', error);
+    }
+  };
+
   useEffect(() => {
     checkHealth().then(setIsConnected);
+    loadInitialFlights();
   }, []);
 
   const switchView = (view: 'flights' | 'seats' | 'addons' | 'booking') => {
@@ -40,19 +65,7 @@ function App() {
         case 'search_flights':
         case 'filter_flights': {
           const rawFlights = (result.flights as Record<string, unknown>[]) || [];
-          const mapped: Flight[] = rawFlights.map((f) => ({
-            flight_id: f.flight_id as string,
-            airline: f.airline as string,
-            origin: f.origin as string,
-            destination: f.destination as string,
-            departure_time: f.departure_time as string,
-            arrival_time: f.arrival_time as string,
-            duration: f.duration as string,
-            price: (f.price_per_passenger ?? f.price) as number,
-            aircraft: f.aircraft as string,
-            date: f.date as string || '',
-          }));
-          setFlights(mapped);
+          setFlights(mapFlights(rawFlights));
           setBookingStep('select');
           switchView('flights');
           break;
@@ -177,6 +190,7 @@ function App() {
       setActiveView(null);
       setSelectedSeatId(null);
       selectedFlightIdRef.current = null;
+      loadInitialFlights();
     } catch (err) {
       console.error('Failed to reset conversation:', err);
     }
@@ -199,6 +213,10 @@ function App() {
 
   const handleFlightSelect = (flightId: string) => {
     handleSendMessage(`Show me the seat map for flight ${flightId}`);
+  };
+
+  const handleBookFlight = (flightId: string) => {
+    handleSendMessage(`I want to book flight ${flightId}`);
   };
 
   const handleConfirmBooking = () => {
@@ -228,6 +246,7 @@ function App() {
             activeView={activeView}
             selectedSeatId={selectedSeatId}
             onFlightSelect={handleFlightSelect}
+            onBookFlight={handleBookFlight}
             onSeatSelect={handleSeatSelect}
             onBaggageChange={handleBaggageChange}
             onMealChange={handleMealChange}

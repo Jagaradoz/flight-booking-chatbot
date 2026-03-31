@@ -3,6 +3,26 @@ from data.airports import is_valid_airport, get_airport_info
 import state
 
 
+def list_flights() -> dict:
+    """Return the full flight catalog for initial browsing."""
+    flights_out = []
+    for flight in FLIGHTS:
+        flights_out.append({
+            "flight_id": flight["flight_id"],
+            "airline": flight["airline"],
+            "origin": flight["origin"],
+            "destination": flight["destination"],
+            "departure_time": flight["departure_time"],
+            "arrival_time": flight["arrival_time"],
+            "duration": flight["duration"],
+            "price": flight["price"],
+            "aircraft": flight["aircraft"],
+            "date": flight["date"],
+        })
+
+    return {"flights": flights_out, "count": len(flights_out)}
+
+
 def search_flights(origin: str, destination: str, date: str, passengers: int = 1) -> dict:
     """Search flights by origin, destination, and date."""
     origin = origin.upper()

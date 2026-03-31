@@ -14,7 +14,7 @@ export function Header({ onReset }: HeaderProps) {
             <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground truncate">Flight Booking</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground truncate">Flight Booking Chatbot</h1>
             <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Conversational booking assistant</p>
           </div>
         </div>

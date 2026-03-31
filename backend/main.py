@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from chat import chat, reset_conversation
 import state
+from tools.flights import list_flights
 
 app = FastAPI(title="Flight Booking Chatbot API")
 
@@ -36,6 +37,11 @@ def chat_endpoint(request: ChatRequest):
 @app.get("/api/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/flights")
+def flights():
+    return {"status": "success", **list_flights()}
 
 
 @app.post("/api/reset")

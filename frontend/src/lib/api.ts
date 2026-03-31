@@ -29,6 +29,12 @@ export interface HealthResponse {
   status: 'healthy';
 }
 
+export interface FlightsResponse {
+  status: 'success';
+  flights: Record<string, unknown>[];
+  count: number;
+}
+
 export interface ChatResult {
   text: string;
   tool_data: ToolData[];
@@ -68,5 +74,18 @@ export const checkHealth = async (): Promise<boolean> => {
     return response.data.status === 'healthy';
   } catch (error) {
     return false;
+  }
+};
+
+export const fetchFlights = async (): Promise<Record<string, unknown>[]> => {
+  try {
+    const response = await api.get<FlightsResponse>('/api/flights');
+    return response.data.flights;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.request) {
+      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:8000');
+    }
+
+    throw new Error('Failed to load flights');
   }
 };

@@ -18,6 +18,7 @@ interface RightPanelProps {
   activeView?: { view: ViewMode; key: number } | null;
   selectedSeatId?: string | null;
   onFlightSelect?: (flightId: string) => void;
+  onBookFlight?: (flightId: string) => void;
   onSeatSelect?: (seatId: string) => void;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
@@ -33,6 +34,7 @@ export function RightPanel({
   activeView,
   selectedSeatId,
   onFlightSelect,
+  onBookFlight,
   onSeatSelect,
   onBaggageChange,
   onMealChange,
@@ -97,7 +99,7 @@ export function RightPanel({
       </div>
 
       <div className="flex-1 overflow-auto">
-        {viewMode === 'flights' && <FlightTable flights={flights} onFlightSelect={onFlightSelect} />}
+        {viewMode === 'flights' && <FlightTable flights={flights} onFlightSelect={onFlightSelect} onBookFlight={onBookFlight} />}
         {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} selectedSeatId={selectedSeatId} />}
         {viewMode === 'addons' && (
           <AddOnsPanel
