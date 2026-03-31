@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { ChatInput } from './components/ChatInput';
 import { RightPanel } from './components/RightPanel';
-import { sendMessage, resetConversation } from './lib/api';
+import { sendMessage, resetConversation, checkHealth } from './lib/api';
 import type { ToolData } from './lib/api';
 import { Message, Flight, Seat, SeatMap, Booking } from './types';
 
@@ -18,8 +18,14 @@ function App() {
   const [mealPreference, setMealPreference] = useState<string | null>(null);
   const [bookingStep, setBookingStep] = useState<'search' | 'select' | 'customize' | 'book' | 'confirm'>('search');
   const [activeView, setActiveView] = useState<{ view: 'flights' | 'seats' | 'addons' | 'booking'; key: number } | null>(null);
+  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(true);
   const activeViewKeyRef = useRef(0);
   const selectedFlightIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    checkHealth().then(setIsConnected);
+  }, []);
 
   const switchView = (view: 'flights' | 'seats' | 'addons' | 'booking') => {
     activeViewKeyRef.current += 1;
@@ -52,6 +58,7 @@ function App() {
           break;
         }
         case 'get_flight_details': {
+          switchView('flights');
           break;
         }
         case 'get_seat_map': {
@@ -80,6 +87,10 @@ function App() {
           break;
         }
         case 'select_seat': {
+          const seat = result.seat as Record<string, unknown> | undefined;
+          if (seat) {
+            setSelectedSeatId(seat.seat_id as string);
+          }
           break;
         }
         case 'add_baggage': {
@@ -164,6 +175,7 @@ function App() {
       setMealPreference(null);
       setBookingStep('search');
       setActiveView(null);
+      setSelectedSeatId(null);
       selectedFlightIdRef.current = null;
     } catch (err) {
       console.error('Failed to reset conversation:', err);
@@ -185,8 +197,21 @@ function App() {
     handleSendMessage(`Set my meal preference to ${meal}`);
   };
 
+  const handleFlightSelect = (flightId: string) => {
+    handleSendMessage(`Show me the seat map for flight ${flightId}`);
+  };
+
+  const handleConfirmBooking = () => {
+    handleSendMessage('Confirm my booking');
+  };
+
   return (
     <div className="flex flex-col h-screen">
+      {!isConnected && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2 text-center text-sm text-destructive">
+          Cannot connect to server. Please ensure the backend is running on http://localhost:8000
+        </div>
+      )}
       <Header onReset={handleReset} />
       <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
         <div className="flex flex-col w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border">
@@ -201,9 +226,12 @@ function App() {
             baggage={baggage}
             mealPreference={mealPreference}
             activeView={activeView}
+            selectedSeatId={selectedSeatId}
+            onFlightSelect={handleFlightSelect}
             onSeatSelect={handleSeatSelect}
             onBaggageChange={handleBaggageChange}
             onMealChange={handleMealChange}
+            onConfirmBooking={handleConfirmBooking}
           />
         </div>
       </div>

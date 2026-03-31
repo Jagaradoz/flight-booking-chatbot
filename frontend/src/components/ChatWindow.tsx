@@ -25,11 +25,11 @@ export function ChatWindow({ messages, isLoading, bookingStep }: ChatWindowProps
     <div className="flex-1 bg-muted/30 overflow-hidden relative">
       <CollapsibleProgress currentStep={bookingStep} />
       <ScrollArea className="h-full" ref={scrollRef}>
-        <div className="px-4 sm:px-6 py-6">
-          {messages.length === 0 && !isLoading ? (
-            <div className="flex flex-col items-start justify-center h-full min-h-[300px] sm:min-h-[400px] max-w-2xl">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 text-primary">
+        {messages.length === 0 && !isLoading ? (
+          <div className="px-4 py-6 sm:px-6">
+            <div className="flex min-h-[300px] h-full items-center justify-center sm:min-h-[400px]">
+              <div className="max-w-2xl space-y-3 text-center">
+                <div className="inline-flex items-center justify-center gap-2 text-primary">
                   <MessageSquare className="h-5 w-5" />
                   <span className="text-sm font-medium uppercase tracking-wide">Ready to assist</span>
                 </div>
@@ -37,23 +37,20 @@ export function ChatWindow({ messages, isLoading, bookingStep }: ChatWindowProps
                   Book your next flight
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-                  Search flights, select seats, add services, and complete your booking through natural conversation.
-                </p>
-                <div className="mt-6 pt-6 border-t border-border">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Example</p>
-                  <p className="text-sm text-foreground/80 font-medium">"I need to fly from Bangkok to Tokyo on April 15th"</p>
-                </div>
+Search flights, compare options, choose seats, add extras, and complete your booking. All through a simple natural conversation.                </p>
               </div>
             </div>
-          ) : (
+          </div>
+        ) : (
+          <div className="px-4 pb-6 pt-24 sm:px-6 sm:pb-8 sm:pt-28">
             <>
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
               {isLoading && <LoadingIndicator />}
             </>
-          )}
-        </div>
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

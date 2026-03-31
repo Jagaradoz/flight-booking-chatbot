@@ -1,12 +1,14 @@
 import { Booking } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
 import { CheckCircle2, Clock, Plane, User, Mail, Utensils, Luggage, MapPin } from 'lucide-react';
 
 interface BookingSummaryProps {
   booking: Booking | null;
+  onConfirm?: () => void;
 }
 
-export function BookingSummary({ booking }: BookingSummaryProps) {
+export function BookingSummary({ booking, onConfirm }: BookingSummaryProps) {
   if (!booking) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -148,6 +150,15 @@ export function BookingSummary({ booking }: BookingSummaryProps) {
               </div>
             </div>
           </div>
+
+          {!isConfirmed && (
+            <div className="border-t border-border pt-4">
+              <Button onClick={onConfirm} className="w-full">
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Confirm Booking
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

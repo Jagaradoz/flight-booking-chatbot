@@ -5,9 +5,10 @@ import { Armchair } from 'lucide-react';
 interface SeatMapProps {
   seatMap: SeatMapType | null;
   onSeatSelect?: (seatId: string) => void;
+  selectedSeatId?: string | null;
 }
 
-export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
+export function SeatMap({ seatMap, onSeatSelect, selectedSeatId }: SeatMapProps) {
   if (!seatMap) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -21,6 +22,7 @@ export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
   }
 
   const getSeatColor = (seat: Seat) => {
+    if (seat.seat_id === selectedSeatId) return 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/50';
     if (seat.occupied) return 'bg-muted text-muted-foreground cursor-not-allowed opacity-50';
     
     switch (seat.section) {

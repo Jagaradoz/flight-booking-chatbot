@@ -4,9 +4,10 @@ import { Plane, Clock } from 'lucide-react';
 
 interface FlightTableProps {
   flights: Flight[];
+  onFlightSelect?: (flightId: string) => void;
 }
 
-export function FlightTable({ flights }: FlightTableProps) {
+export function FlightTable({ flights, onFlightSelect }: FlightTableProps) {
   if (flights.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -29,7 +30,7 @@ export function FlightTable({ flights }: FlightTableProps) {
       </div>
       <div className="space-y-3 sm:space-y-4">
         {flights.map((flight) => (
-          <Card key={flight.flight_id} className="border-border hover:border-primary/50 transition-colors cursor-pointer">
+          <Card key={flight.flight_id} className="border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => onFlightSelect?.(flight.flight_id)}>
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start mb-4 sm:mb-5">
                 <div className="space-y-0.5">

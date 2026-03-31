@@ -16,9 +16,12 @@ interface RightPanelProps {
   baggage: number;
   mealPreference: string | null;
   activeView?: { view: ViewMode; key: number } | null;
+  selectedSeatId?: string | null;
+  onFlightSelect?: (flightId: string) => void;
   onSeatSelect?: (seatId: string) => void;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
+  onConfirmBooking?: () => void;
 }
 
 export function RightPanel({
@@ -28,9 +31,12 @@ export function RightPanel({
   baggage,
   mealPreference,
   activeView,
+  selectedSeatId,
+  onFlightSelect,
   onSeatSelect,
   onBaggageChange,
   onMealChange,
+  onConfirmBooking,
 }: RightPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('flights');
 
@@ -91,8 +97,8 @@ export function RightPanel({
       </div>
 
       <div className="flex-1 overflow-auto">
-        {viewMode === 'flights' && <FlightTable flights={flights} />}
-        {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} />}
+        {viewMode === 'flights' && <FlightTable flights={flights} onFlightSelect={onFlightSelect} />}
+        {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} selectedSeatId={selectedSeatId} />}
         {viewMode === 'addons' && (
           <AddOnsPanel
             baggage={baggage}
@@ -101,7 +107,7 @@ export function RightPanel({
             onMealChange={onMealChange}
           />
         )}
-        {viewMode === 'booking' && <BookingSummary booking={booking} />}
+        {viewMode === 'booking' && <BookingSummary booking={booking} onConfirm={onConfirmBooking} />}
       </div>
     </div>
   );
