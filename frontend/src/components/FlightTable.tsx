@@ -5,11 +5,12 @@ import { Plane, Clock, Ticket } from 'lucide-react';
 
 interface FlightTableProps {
   flights: Flight[];
+  selectedFlightId?: string | null;
   onBookFlight?: (flightId: string) => void;
   disabled?: boolean;
 }
 
-export function FlightTable({ flights, onBookFlight, disabled }: FlightTableProps) {
+export function FlightTable({ flights, selectedFlightId, onBookFlight, disabled }: FlightTableProps) {
   if (flights.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -29,10 +30,14 @@ export function FlightTable({ flights, onBookFlight, disabled }: FlightTableProp
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">Available Flights</h2>
           <span className="text-sm text-muted-foreground">({flights.length})</span>
         </div>
+        <p className="mt-2 text-xs sm:text-sm text-muted-foreground">Choose a flight to continue. Seats and add-ons can be skipped later.</p>
       </div>
       <div className="space-y-3 sm:space-y-4">
         {flights.map((flight) => (
-          <Card key={flight.flight_id} className="overflow-hidden border-border transition-colors hover:border-primary/30">
+          <Card
+            key={flight.flight_id}
+            className={`overflow-hidden border-border transition-colors ${selectedFlightId === flight.flight_id ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/30'}`}
+          >
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start mb-4 sm:mb-5">
                 <div className="space-y-0.5">
@@ -79,12 +84,12 @@ export function FlightTable({ flights, onBookFlight, disabled }: FlightTableProp
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end pt-4 border-t border-border/60">
                 <Button
                   type="button"
-                  className="sm:min-w-28"
+                  className={`sm:min-w-28 ${selectedFlightId === flight.flight_id ? 'ring-2 ring-primary/20 ring-offset-2 ring-offset-card' : 'shadow-sm'}`}
                   disabled={disabled}
                   onClick={() => onBookFlight?.(flight.flight_id)}
                 >
                   <Ticket className="mr-2 h-4 w-4" />
-                  Book
+                  {selectedFlightId === flight.flight_id ? 'Booked' : 'Book'}
                 </Button>
               </div>
             </CardContent>

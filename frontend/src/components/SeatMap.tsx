@@ -1,5 +1,6 @@
 import { SeatMap as SeatMapType, Seat } from '@/types';
 import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
 import { Armchair } from 'lucide-react';
 
 interface SeatMapProps {
@@ -7,9 +8,11 @@ interface SeatMapProps {
   onSeatSelect?: (seatId: string) => void;
   selectedSeatId?: string | null;
   disabled?: boolean;
+  onBack?: () => void;
+  onNext?: () => void;
 }
 
-export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled }: SeatMapProps) {
+export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled, onBack, onNext }: SeatMapProps) {
   if (!seatMap) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -59,6 +62,7 @@ export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled }: Sea
         <p className="text-xs sm:text-sm text-muted-foreground">
           {seatMap.available_seats} of {seatMap.total_seats} seats available
         </p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Seat selection is optional. You can continue without choosing one.</p>
       </div>
 
       <Card className="border-border">
@@ -107,6 +111,15 @@ export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled }: Sea
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between pt-4">
+        <Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" disabled={disabled} onClick={onNext}>
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

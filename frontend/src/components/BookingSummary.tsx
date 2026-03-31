@@ -10,11 +10,12 @@ interface BookingSummaryProps {
   showForm?: boolean;
   isConfirming?: boolean;
   disabled?: boolean;
+  onBack?: () => void;
   onCreateBooking?: (name: string, email: string) => void;
   onConfirm?: () => void;
 }
 
-export function BookingSummary({ booking, showForm, isConfirming, disabled, onCreateBooking, onConfirm }: BookingSummaryProps) {
+export function BookingSummary({ booking, showForm, isConfirming, disabled, onBack, onCreateBooking, onConfirm }: BookingSummaryProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
@@ -29,11 +30,10 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
     };
 
     return (
-      <div className="p-4 sm:p-6 space-y-4">
-        <Card className="border-border">
+      <div className="space-y-4">
+        <Card className="border-0 shadow-none bg-transparent">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <User className="h-4 w-4 sm:h-5 sm:w-5" />
               Passenger Details
             </CardTitle>
             <p className="text-xs sm:text-sm text-muted-foreground">Enter your details to create a booking</p>
@@ -61,9 +61,14 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
                   disabled={disabled}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={!canSubmit}>
-                Create Booking
-              </Button>
+              <div className="flex items-center justify-between pt-2">
+                <Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
+                  Back
+                </Button>
+                <Button type="submit" disabled={!canSubmit}>
+                  Next
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -87,6 +92,17 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+            {isConfirmed ? 'Booking Confirmed' : 'Booking Confirmation'}
+          </h2>
+        </div>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          {isConfirmed ? 'Your trip is confirmed and your booking details are ready below.' : 'Review your itinerary and confirm your booking when you are ready.'}
+        </p>
+      </div>
+
       <Card className={isConfirmed ? 'border-success border-2' : 'border-border'}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -98,7 +114,7 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
             ) : (
               <>
                 <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
-                Booking Pending
+                Pending Confirmation
               </>
             )}
           </CardTitle>
@@ -214,7 +230,7 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
           </div>
 
           {!isConfirmed && (
-            <div className="border-t border-border pt-4">
+            <div className="pt-4">
               <Button onClick={onConfirm} className="w-full" disabled={isConfirming || disabled}>
                 {isConfirming ? (
                   <>
@@ -224,7 +240,7 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onCr
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Confirm Booking
+                    CONFIRM
                   </>
                 )}
               </Button>

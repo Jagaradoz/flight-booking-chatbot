@@ -24,6 +24,7 @@ function App() {
   const [mealPreference, setMealPreference] = useState<string | null>(null);
   const [bookingStep, setBookingStep] = useState<'search' | 'select' | 'customize' | 'book' | 'confirm'>('search');
   const [activeView, setActiveView] = useState<{ view: 'flights' | 'seats' | 'addons' | 'booking'; key: number } | null>(null);
+  const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(true);
   const activeViewKeyRef = useRef(0);
@@ -116,6 +117,7 @@ function App() {
         case 'filter_flights': {
           const rawFlights = (result.flights as Record<string, unknown>[]) || [];
           setFlights(mapFlights(rawFlights));
+          setSelectedFlightId(null);
           setBookingStep('select');
           switchView('flights');
           break;
@@ -127,6 +129,7 @@ function App() {
         case 'get_seat_map': {
           const mapped = parseSeatMapResponse(result);
           setSeatMap(mapped);
+          setSelectedFlightId(result.flight_id as string);
           selectedFlightIdRef.current = result.flight_id as string;
           setBookingStep('customize');
           switchView('seats');
@@ -224,6 +227,7 @@ function App() {
       setMealPreference(null);
       setBookingStep('search');
       setActiveView(null);
+      setSelectedFlightId(null);
       setSelectedSeatId(null);
       selectedFlightIdRef.current = null;
       loadInitialFlights();
@@ -235,8 +239,8 @@ function App() {
   const handleBookFlight = async (flightId: string) => {
     if (!lockProcessing()) return;
     try {
-      // Reset downstream state when switching flights
-      if (selectedFlightIdRef.current && selectedFlightIdRef.current !== flightId) {
+      if (selectedFlightId !== flightId) {
+        setSeatMap(null);
         setSelectedSeatId(null);
         setBaggage(0);
         setMealPreference(null);
@@ -245,8 +249,8 @@ function App() {
       const result = await fetchSeatMap(flightId);
       const mapped = parseSeatMapResponse(result as Record<string, unknown>);
       setSeatMap(mapped);
+      setSelectedFlightId(flightId);
       selectedFlightIdRef.current = flightId;
-      setSelectedSeatId(null);
       setBookingStep('customize');
       switchView('seats');
     } catch (err) {
@@ -254,6 +258,26 @@ function App() {
     } finally {
       unlockProcessing();
     }
+  };
+
+  const handleNextFromSeats = () => {
+    switchView('addons');
+  };
+
+  const handleBackFromSeats = () => {
+    switchView('flights');
+  };
+
+  const handleBackFromAddOns = () => {
+    switchView('seats');
+  };
+
+  const handleNextFromAddOns = () => {
+    switchView('booking');
+  };
+
+  const handleBackFromBooking = () => {
+    switchView('addons');
   };
 
   const handleSeatSelect = async (seatId: string) => {
@@ -365,14 +389,20 @@ function App() {
             baggage={baggage}
             mealPreference={mealPreference}
             activeView={activeView}
+            selectedFlightId={selectedFlightId}
             selectedSeatId={selectedSeatId}
             bookingStep={bookingStep}
             disabled={isProcessing}
             isConfirming={isConfirming}
             onBookFlight={handleBookFlight}
             onSeatSelect={handleSeatSelect}
+            onBackFromSeats={handleBackFromSeats}
+            onNextFromSeats={handleNextFromSeats}
+            onBackFromAddOns={handleBackFromAddOns}
             onBaggageChange={handleBaggageChange}
             onMealChange={handleMealChange}
+            onNextFromAddOns={handleNextFromAddOns}
+            onBackFromBooking={handleBackFromBooking}
             onCreateBooking={handleCreateBooking}
             onConfirmBooking={handleConfirmBooking}
           />
