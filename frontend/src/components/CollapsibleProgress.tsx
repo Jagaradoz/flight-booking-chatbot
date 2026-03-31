@@ -97,7 +97,7 @@ export function CollapsibleProgress({ currentStep }: CollapsibleProgressProps) {
                       </div>
                       <span
                         className={`text-[10px] sm:text-xs mt-1 font-medium whitespace-nowrap ${
-                          isCurrent ? 'text-primary' : isUpcoming ? 'text-muted-foreground' : 'text-foreground/70'
+                          isCurrent ? 'text-primary' : isUpcoming ? 'text-muted-foreground' : 'text-foreground'
                         }`}
                       >
                         {step.label}

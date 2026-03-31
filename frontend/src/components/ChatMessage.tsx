@@ -2,6 +2,8 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { Bot } from 'lucide-react';
 import { Message } from '@/types';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageProps {
   message: Message;
@@ -33,7 +35,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : 'bg-card border border-border text-card-foreground'
         )}
       >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+        {isUser ? (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+        ) : (
+          <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:font-semibold prose-strong:text-foreground">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );

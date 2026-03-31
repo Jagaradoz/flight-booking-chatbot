@@ -145,7 +145,7 @@ function App() {
   useEffect(() => {
     setMessages(MOCK_MESSAGES);
     setFlights(MOCK_FLIGHTS);
-    setBookingStep('search');
+    setBookingStep('book');
   }, []);
 
   const handleSendMessage = async (content: string) => {
