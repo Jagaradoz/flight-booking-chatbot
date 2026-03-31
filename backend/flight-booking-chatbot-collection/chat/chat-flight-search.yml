@@ -1,0 +1,26 @@
+info:
+  name: chat-flight-search
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/chat
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "message": "I want to fly from New York to Los Angeles on April 15, 2026"
+      }
+
+assert:
+  - expr: res.status == 200
+  - expr: res.body.status == "success"
+  - expr: res.body.response != null
+
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5

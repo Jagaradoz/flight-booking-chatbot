@@ -1,0 +1,20 @@
+info:
+  name: reset
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/reset
+  auth: inherit
+
+assert:
+  - expr: res.status == 200
+  - expr: res.body.status == "success"
+  - expr: res.body.message == "Conversation reset"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

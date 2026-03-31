@@ -1,0 +1,26 @@
+info:
+  name: chat-basic
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/chat
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+        "message": "Hello, I need help booking a flight"
+      }
+
+assert:
+  - expr: res.status == 200
+  - expr: res.body.status == "success"
+  - expr: res.body.response != null
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
