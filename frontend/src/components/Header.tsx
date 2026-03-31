@@ -7,20 +7,20 @@ interface HeaderProps {
 
 export function Header({ onReset }: HeaderProps) {
   return (
-    <header className="border-b bg-white shadow-sm">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg">
-            <Plane className="h-6 w-6 text-primary-foreground" />
+    <header className="border-b bg-card shadow-sm">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-primary p-2 rounded-md flex-shrink-0">
+            <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Flight Booking Assistant</h1>
-            <p className="text-sm text-gray-500">Book your flight through conversation</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground truncate">Flight Booking</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Conversational booking assistant</p>
           </div>
         </div>
-        <Button onClick={onReset} variant="outline" className="gap-2">
+        <Button onClick={onReset} variant="outline" size="sm" className="gap-2 flex-shrink-0">
           <RotateCcw className="h-4 w-4" />
-          New Conversation
+          <span className="hidden sm:inline">New</span>
         </Button>
       </div>
     </header>

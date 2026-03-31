@@ -26,7 +26,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="border-t bg-white p-4">
+    <div className="border-t border-border bg-card p-3 sm:p-4">
       <div className="container mx-auto flex gap-2">
         <Input
           type="text"
@@ -35,14 +35,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
           disabled={disabled}
-          className="flex-1"
+          className="flex-1 text-sm sm:text-base"
           autoFocus
         />
         <Button
           onClick={handleSend}
           disabled={disabled || !inputValue.trim()}
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
         >
           <Send className="h-4 w-4" />
         </Button>

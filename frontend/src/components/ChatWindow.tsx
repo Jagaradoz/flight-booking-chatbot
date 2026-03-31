@@ -2,15 +2,17 @@ import { useEffect, useRef } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { ChatMessage } from './ChatMessage';
 import { LoadingIndicator } from './LoadingIndicator';
+import { CollapsibleProgress } from './CollapsibleProgress';
 import { Message } from '@/types';
 import { MessageSquare } from 'lucide-react';
 
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
+  bookingStep: 'search' | 'select' | 'customize' | 'book' | 'confirm';
 }
 
-export function ChatWindow({ messages, isLoading }: ChatWindowProps) {
+export function ChatWindow({ messages, isLoading, bookingStep }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,24 +22,27 @@ export function ChatWindow({ messages, isLoading }: ChatWindowProps) {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="flex-1 bg-muted/30 overflow-hidden relative">
+      <CollapsibleProgress currentStep={bookingStep} />
       <ScrollArea className="h-full" ref={scrollRef}>
-        <div className="container mx-auto px-4 py-6">
+        <div className="px-4 sm:px-6 py-6">
           {messages.length === 0 && !isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
-              <div className="bg-primary/10 p-6 rounded-full mb-4">
-                <MessageSquare className="h-12 w-12 text-primary" />
-              </div>
-              <h2 className="text-2xl font-semibold text-gray-700 mb-2">
-                Welcome to Flight Booking Assistant
-              </h2>
-              <p className="text-gray-500 max-w-md">
-                Start a conversation by typing a message below. I can help you search for flights,
-                select seats, add baggage, and complete your booking.
-              </p>
-              <div className="mt-6 text-sm text-gray-400">
-                <p className="mb-1">Try saying:</p>
-                <p className="italic">"I need to fly from Bangkok to Tokyo on April 15th"</p>
+            <div className="flex flex-col items-start justify-center h-full min-h-[300px] sm:min-h-[400px] max-w-2xl">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 text-primary">
+                  <MessageSquare className="h-5 w-5" />
+                  <span className="text-sm font-medium uppercase tracking-wide">Ready to assist</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-foreground leading-tight">
+                  Book your next flight
+                </h2>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Search flights, select seats, add services, and complete your booking through natural conversation.
+                </p>
+                <div className="mt-6 pt-6 border-t border-border">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Example</p>
+                  <p className="text-sm text-foreground/80 font-medium">"I need to fly from Bangkok to Tokyo on April 15th"</p>
+                </div>
               </div>
             </div>
           ) : (
