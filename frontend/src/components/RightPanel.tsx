@@ -8,6 +8,15 @@ import { Button } from './ui/button';
 import { Plane, Armchair, ShoppingBag, FileText } from 'lucide-react';
 
 type ViewMode = 'flights' | 'seats' | 'addons' | 'booking';
+type BookingStep = 'search' | 'select' | 'customize' | 'book' | 'confirm';
+
+const TAB_ACCESS: Record<BookingStep, ViewMode[]> = {
+  search: ['flights'],
+  select: ['flights'],
+  customize: ['flights', 'seats', 'addons'],
+  book: ['flights', 'seats', 'addons', 'booking'],
+  confirm: ['flights', 'seats', 'addons', 'booking'],
+};
 
 interface RightPanelProps {
   flights: Flight[];
@@ -17,11 +26,14 @@ interface RightPanelProps {
   mealPreference: string | null;
   activeView?: { view: ViewMode; key: number } | null;
   selectedSeatId?: string | null;
-  onFlightSelect?: (flightId: string) => void;
+  bookingStep: BookingStep;
+  disabled?: boolean;
+  isConfirming?: boolean;
   onBookFlight?: (flightId: string) => void;
   onSeatSelect?: (seatId: string) => void;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
+  onCreateBooking?: (name: string, email: string) => void;
   onConfirmBooking?: () => void;
 }
 
@@ -33,11 +45,14 @@ export function RightPanel({
   mealPreference,
   activeView,
   selectedSeatId,
-  onFlightSelect,
+  bookingStep,
+  disabled,
+  isConfirming,
   onBookFlight,
   onSeatSelect,
   onBaggageChange,
   onMealChange,
+  onCreateBooking,
   onConfirmBooking,
 }: RightPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('flights');
@@ -48,8 +63,10 @@ export function RightPanel({
     }
   }, [activeView]);
 
+  const allowedTabs = TAB_ACCESS[bookingStep];
+  const isTabEnabled = (tab: ViewMode) => allowedTabs.includes(tab);
+
   const hasFlights = flights.length > 0;
-  const hasSeatMap = seatMap !== null;
   const hasBooking = booking !== null;
 
   return (
@@ -60,6 +77,7 @@ export function RightPanel({
             variant={viewMode === 'flights' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('flights')}
+            disabled={!isTabEnabled('flights')}
             className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
           >
             <Plane className="h-4 w-4" />
@@ -70,7 +88,7 @@ export function RightPanel({
             variant={viewMode === 'seats' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('seats')}
-            disabled={!hasSeatMap}
+            disabled={!isTabEnabled('seats')}
             className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
           >
             <Armchair className="h-4 w-4" />
@@ -80,6 +98,7 @@ export function RightPanel({
             variant={viewMode === 'addons' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('addons')}
+            disabled={!isTabEnabled('addons')}
             className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
           >
             <ShoppingBag className="h-4 w-4" />
@@ -89,6 +108,7 @@ export function RightPanel({
             variant={viewMode === 'booking' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('booking')}
+            disabled={!isTabEnabled('booking')}
             className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
           >
             <FileText className="h-4 w-4" />
@@ -99,17 +119,27 @@ export function RightPanel({
       </div>
 
       <div className="flex-1 overflow-auto">
-        {viewMode === 'flights' && <FlightTable flights={flights} onFlightSelect={onFlightSelect} onBookFlight={onBookFlight} />}
-        {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} selectedSeatId={selectedSeatId} />}
+        {viewMode === 'flights' && <FlightTable flights={flights} onBookFlight={onBookFlight} disabled={disabled} />}
+        {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} selectedSeatId={selectedSeatId} disabled={disabled} />}
         {viewMode === 'addons' && (
           <AddOnsPanel
             baggage={baggage}
             mealPreference={mealPreference}
             onBaggageChange={onBaggageChange}
             onMealChange={onMealChange}
+            disabled={disabled}
           />
         )}
-        {viewMode === 'booking' && <BookingSummary booking={booking} onConfirm={onConfirmBooking} />}
+        {viewMode === 'booking' && (
+          <BookingSummary
+            booking={booking}
+            showForm={bookingStep === 'customize' || bookingStep === 'book'}
+            isConfirming={isConfirming}
+            disabled={disabled}
+            onCreateBooking={onCreateBooking}
+            onConfirm={onConfirmBooking}
+          />
+        )}
       </div>
     </div>
   );

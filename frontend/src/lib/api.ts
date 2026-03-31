@@ -89,3 +89,37 @@ export const fetchFlights = async (): Promise<Record<string, unknown>[]> => {
     throw new Error('Failed to load flights');
   }
 };
+
+// --- Direct API calls (bypass AI chat) ---
+
+interface DirectResponse {
+  status: 'success' | 'error';
+  message?: string;
+  [key: string]: unknown;
+}
+
+const directCall = async <T extends DirectResponse>(url: string, body?: Record<string, unknown>): Promise<T> => {
+  const response = await api.post<T>(url, body);
+  if (response.data.status === 'error') {
+    throw new Error(response.data.message || 'An error occurred');
+  }
+  return response.data;
+};
+
+export const fetchSeatMap = (flightId: string) =>
+  directCall('/api/seat-map', { flight_id: flightId });
+
+export const selectSeatApi = (flightId: string, seatId: string) =>
+  directCall('/api/select-seat', { flight_id: flightId, seat_id: seatId });
+
+export const setBaggageApi = (checkedBags: number) =>
+  directCall('/api/baggage', { checked_bags: checkedBags });
+
+export const setMealApi = (mealType: string) =>
+  directCall('/api/meal', { meal_type: mealType });
+
+export const createBookingApi = (passengerName: string, passengerEmail: string) =>
+  directCall('/api/create-booking', { passenger_name: passengerName, passenger_email: passengerEmail });
+
+export const confirmBookingApi = () =>
+  directCall('/api/confirm-booking');

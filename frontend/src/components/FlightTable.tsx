@@ -1,15 +1,15 @@
 import { Flight } from '@/types';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Plane, Clock, Eye, Ticket } from 'lucide-react';
+import { Plane, Clock, Ticket } from 'lucide-react';
 
 interface FlightTableProps {
   flights: Flight[];
-  onFlightSelect?: (flightId: string) => void;
   onBookFlight?: (flightId: string) => void;
+  disabled?: boolean;
 }
 
-export function FlightTable({ flights, onFlightSelect, onBookFlight }: FlightTableProps) {
+export function FlightTable({ flights, onBookFlight, disabled }: FlightTableProps) {
   if (flights.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -79,16 +79,8 @@ export function FlightTable({ flights, onFlightSelect, onBookFlight }: FlightTab
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end pt-4 border-t border-border/60">
                 <Button
                   type="button"
-                  variant="outline"
                   className="sm:min-w-28"
-                  onClick={() => onFlightSelect?.(flight.flight_id)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View
-                </Button>
-                <Button
-                  type="button"
-                  className="sm:min-w-28"
+                  disabled={disabled}
                   onClick={() => onBookFlight?.(flight.flight_id)}
                 >
                   <Ticket className="mr-2 h-4 w-4" />

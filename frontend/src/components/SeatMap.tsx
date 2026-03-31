@@ -6,9 +6,10 @@ interface SeatMapProps {
   seatMap: SeatMapType | null;
   onSeatSelect?: (seatId: string) => void;
   selectedSeatId?: string | null;
+  disabled?: boolean;
 }
 
-export function SeatMap({ seatMap, onSeatSelect, selectedSeatId }: SeatMapProps) {
+export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled }: SeatMapProps) {
   if (!seatMap) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -91,8 +92,8 @@ export function SeatMap({ seatMap, onSeatSelect, selectedSeatId }: SeatMapProps)
                     .map(seat => (
                       <button
                         key={seat.seat_id}
-                        onClick={() => !seat.occupied && onSeatSelect?.(seat.seat_id)}
-                        disabled={seat.occupied}
+                        onClick={() => !seat.occupied && !disabled && onSeatSelect?.(seat.seat_id)}
+                        disabled={seat.occupied || disabled}
                         className={`w-9 h-9 sm:w-10 sm:h-10 text-xs font-medium border rounded transition-colors ${getSeatColor(seat)}`}
                         title={`${seat.seat_id} - ${seat.section} - ${seat.type} ${seat.extra_cost > 0 ? `+$${seat.extra_cost}` : ''}`}
                       >

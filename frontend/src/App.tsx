@@ -3,7 +3,11 @@ import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { ChatInput } from './components/ChatInput';
 import { RightPanel } from './components/RightPanel';
-import { sendMessage, resetConversation, checkHealth, fetchFlights } from './lib/api';
+import {
+  sendMessage, resetConversation, checkHealth, fetchFlights,
+  fetchSeatMap, selectSeatApi, setBaggageApi, setMealApi,
+  createBookingApi, confirmBookingApi,
+} from './lib/api';
 import type { ToolData } from './lib/api';
 import { Message, Flight, Seat, SeatMap, Booking } from './types';
 
@@ -11,6 +15,8 @@ import { Message, Flight, Seat, SeatMap, Booking } from './types';
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [seatMap, setSeatMap] = useState<SeatMap | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -22,6 +28,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(true);
   const activeViewKeyRef = useRef(0);
   const selectedFlightIdRef = useRef<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   const mapFlights = (rawFlights: Record<string, unknown>[]): Flight[] => (
     rawFlights.map((flight) => ({
@@ -57,6 +64,49 @@ function App() {
     setActiveView({ view, key: activeViewKeyRef.current });
   };
 
+  const lockProcessing = () => {
+    if (isProcessingRef.current) return false;
+    isProcessingRef.current = true;
+    setIsProcessing(true);
+    return true;
+  };
+
+  const unlockProcessing = () => {
+    isProcessingRef.current = false;
+    setIsProcessing(false);
+  };
+
+  const invalidateBookingIfPending = () => {
+    setBooking((prev) => {
+      if (prev && prev.status === 'pending') {
+        setBookingStep('customize');
+        return null;
+      }
+      return prev;
+    });
+  };
+
+  const parseSeatMapResponse = (result: Record<string, unknown>) => {
+    const rawSeats = (result.seats as Record<string, unknown>[]) || [];
+    const sections = result.sections as SeatMap['sections'];
+    const seats: Seat[] = rawSeats.map((s) => ({
+      seat_id: s.seat_id as string,
+      type: s.type as Seat['type'],
+      section: s.section as Seat['section'],
+      extra_cost: s.extra_cost as number,
+      occupied: false,
+    }));
+    return {
+      flight_id: result.flight_id as string,
+      aircraft: result.aircraft as string,
+      total_seats: result.total_seats as number,
+      available_seats: result.available_seats as number,
+      occupied_seats: result.occupied_seats as number,
+      sections: sections || {},
+      seats,
+    };
+  };
+
   const processToolData = (toolData: ToolData[]) => {
     for (const { tool, result } of toolData) {
       if (result.error) continue;
@@ -75,24 +125,7 @@ function App() {
           break;
         }
         case 'get_seat_map': {
-          const rawSeats = (result.seats as Record<string, unknown>[]) || [];
-          const sections = result.sections as SeatMap['sections'];
-          const seats: Seat[] = rawSeats.map((s) => ({
-            seat_id: s.seat_id as string,
-            type: s.type as Seat['type'],
-            section: s.section as Seat['section'],
-            extra_cost: s.extra_cost as number,
-            occupied: false,
-          }));
-          const mapped: SeatMap = {
-            flight_id: result.flight_id as string,
-            aircraft: result.aircraft as string,
-            total_seats: result.total_seats as number,
-            available_seats: result.available_seats as number,
-            occupied_seats: result.occupied_seats as number,
-            sections: sections || {},
-            seats,
-          };
+          const mapped = parseSeatMapResponse(result);
           setSeatMap(mapped);
           selectedFlightIdRef.current = result.flight_id as string;
           setBookingStep('customize');
@@ -139,6 +172,8 @@ function App() {
   };
 
   const handleSendMessage = async (content: string) => {
+    if (!lockProcessing()) return;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -174,6 +209,7 @@ function App() {
       setMessages((prev) => [...prev, errorResponse]);
     } finally {
       setIsLoading(false);
+      unlockProcessing();
     }
   };
 
@@ -196,31 +232,116 @@ function App() {
     }
   };
 
-  const handleSeatSelect = (seatId: string) => {
-    const flightId = selectedFlightIdRef.current;
-    if (flightId) {
-      handleSendMessage(`Select seat ${seatId} on flight ${flightId}`);
+  const handleBookFlight = async (flightId: string) => {
+    if (!lockProcessing()) return;
+    try {
+      // Reset downstream state when switching flights
+      if (selectedFlightIdRef.current && selectedFlightIdRef.current !== flightId) {
+        setSelectedSeatId(null);
+        setBaggage(0);
+        setMealPreference(null);
+        setBooking(null);
+      }
+      const result = await fetchSeatMap(flightId);
+      const mapped = parseSeatMapResponse(result as Record<string, unknown>);
+      setSeatMap(mapped);
+      selectedFlightIdRef.current = flightId;
+      setSelectedSeatId(null);
+      setBookingStep('customize');
+      switchView('seats');
+    } catch (err) {
+      console.error('Failed to load seat map:', err);
+    } finally {
+      unlockProcessing();
     }
   };
 
-  const handleBaggageChange = (count: number) => {
-    handleSendMessage(`Set my checked baggage to ${count} bag${count !== 1 ? 's' : ''}`);
+  const handleSeatSelect = async (seatId: string) => {
+    const flightId = selectedFlightIdRef.current;
+    if (!flightId || !lockProcessing()) return;
+    try {
+      const result = await selectSeatApi(flightId, seatId);
+      const seat = result.seat as Record<string, unknown> | undefined;
+      if (seat) {
+        setSelectedSeatId(seat.seat_id as string);
+      }
+      invalidateBookingIfPending();
+    } catch (err) {
+      console.error('Failed to select seat:', err);
+    } finally {
+      unlockProcessing();
+    }
   };
 
-  const handleMealChange = (meal: string) => {
-    handleSendMessage(`Set my meal preference to ${meal}`);
+  const handleBaggageChange = async (count: number) => {
+    if (!lockProcessing()) return;
+    try {
+      await setBaggageApi(count);
+      setBaggage(count);
+      invalidateBookingIfPending();
+    } catch (err) {
+      console.error('Failed to update baggage:', err);
+    } finally {
+      unlockProcessing();
+    }
   };
 
-  const handleFlightSelect = (flightId: string) => {
-    handleSendMessage(`Show me the seat map for flight ${flightId}`);
+  const handleMealChange = async (meal: string) => {
+    if (!lockProcessing()) return;
+    try {
+      await setMealApi(meal);
+      setMealPreference(meal);
+      invalidateBookingIfPending();
+    } catch (err) {
+      console.error('Failed to update meal:', err);
+    } finally {
+      unlockProcessing();
+    }
   };
 
-  const handleBookFlight = (flightId: string) => {
-    handleSendMessage(`I want to book flight ${flightId}`);
+  const handleCreateBooking = async (name: string, email: string) => {
+    if (!lockProcessing()) return;
+    try {
+      const result = await createBookingApi(name, email);
+      const b = result.booking as Booking | undefined;
+      if (b) {
+        setBooking(b);
+        setBookingStep('book');
+        switchView('booking');
+      }
+    } catch (err) {
+      console.error('Failed to create booking:', err);
+    } finally {
+      unlockProcessing();
+    }
   };
 
-  const handleConfirmBooking = () => {
-    handleSendMessage('Confirm my booking');
+  const handleConfirmBooking = async () => {
+    if (!lockProcessing()) return;
+    setIsConfirming(true);
+    try {
+      const result = await confirmBookingApi();
+      const b = result.booking as Booking | undefined;
+      if (b) {
+        setBooking(b);
+        setBookingStep('confirm');
+        switchView('booking');
+
+        const code = result.confirmation_code as string;
+        const assistantMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `Your booking has been confirmed! 🎉\n\n**Confirmation Code: ${code}**\n\n- **Passenger:** ${b.passenger.name}\n- **Flight:** ${b.flight.flight_id} — ${b.flight.origin} → ${b.flight.destination}\n- **Date:** ${b.flight.date}\n- **Seat:** ${b.seat}\n- **Total:** $${b.pricing.total}\n\nThank you for booking with us!`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+    } catch (err) {
+      console.error('Failed to confirm booking:', err);
+    } finally {
+      setIsConfirming(false);
+      unlockProcessing();
+    }
   };
 
   return (
@@ -234,7 +355,7 @@ function App() {
       <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
         <div className="flex flex-col w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border">
           <ChatWindow messages={messages} isLoading={isLoading} bookingStep={bookingStep} />
-          <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
+          <ChatInput onSendMessage={handleSendMessage} disabled={isProcessing} />
         </div>
         <div className="w-full lg:w-1/2 overflow-hidden">
           <RightPanel
@@ -245,11 +366,14 @@ function App() {
             mealPreference={mealPreference}
             activeView={activeView}
             selectedSeatId={selectedSeatId}
-            onFlightSelect={handleFlightSelect}
+            bookingStep={bookingStep}
+            disabled={isProcessing}
+            isConfirming={isConfirming}
             onBookFlight={handleBookFlight}
             onSeatSelect={handleSeatSelect}
             onBaggageChange={handleBaggageChange}
             onMealChange={handleMealChange}
+            onCreateBooking={handleCreateBooking}
             onConfirmBooking={handleConfirmBooking}
           />
         </div>
