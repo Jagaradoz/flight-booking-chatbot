@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Flight, SeatMap as SeatMapType, Booking } from '@/types';
 import { FlightTable } from './FlightTable';
 import { SeatMap } from './SeatMap';
@@ -15,6 +15,7 @@ interface RightPanelProps {
   booking: Booking | null;
   baggage: number;
   mealPreference: string | null;
+  activeView?: { view: ViewMode; key: number } | null;
   onSeatSelect?: (seatId: string) => void;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
@@ -26,11 +27,18 @@ export function RightPanel({
   booking,
   baggage,
   mealPreference,
+  activeView,
   onSeatSelect,
   onBaggageChange,
   onMealChange,
 }: RightPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('flights');
+
+  useEffect(() => {
+    if (activeView) {
+      setViewMode(activeView.view);
+    }
+  }, [activeView]);
 
   const hasFlights = flights.length > 0;
   const hasSeatMap = seatMap !== null;

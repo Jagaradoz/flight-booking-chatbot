@@ -46,6 +46,7 @@ def search_flights(origin: str, destination: str, date: str, passengers: int = 1
             "price_per_passenger": f["price"],
             "total_price": f["price"] * passengers,
             "aircraft": f["aircraft"],
+            "date": f["date"],
         })
 
     return {
@@ -97,6 +98,7 @@ def filter_flights(
             "duration": f["duration"],
             "price": f["price"],
             "aircraft": f["aircraft"],
+            "date": f["date"],
         })
 
     return {"flights": flights_out, "count": len(flights_out)}

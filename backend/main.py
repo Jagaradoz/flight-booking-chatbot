@@ -23,10 +23,14 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 def chat_endpoint(request: ChatRequest):
     try:
-        response = chat(request.message)
-        return {"response": response, "status": "success"}
+        result = chat(request.message)
+        return {
+            "response": result["text"],
+            "tool_data": result["tool_data"],
+            "status": "success",
+        }
     except Exception as e:
-        return {"response": f"Sorry, something went wrong: {str(e)}", "status": "error"}
+        return {"response": f"Sorry, something went wrong: {str(e)}", "tool_data": [], "status": "error"}
 
 
 @app.get("/api/health")

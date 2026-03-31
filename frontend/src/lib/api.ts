@@ -9,8 +9,14 @@ const api = axios.create({
   },
 });
 
+export interface ToolData {
+  tool: string;
+  result: Record<string, unknown>;
+}
+
 export interface ChatResponse {
   response: string;
+  tool_data: ToolData[];
   status: 'success' | 'error';
 }
 
@@ -23,13 +29,18 @@ export interface HealthResponse {
   status: 'healthy';
 }
 
-export const sendMessage = async (message: string): Promise<string> => {
+export interface ChatResult {
+  text: string;
+  tool_data: ToolData[];
+}
+
+export const sendMessage = async (message: string): Promise<ChatResult> => {
   try {
     const response = await api.post<ChatResponse>('/api/chat', { message });
     if (response.data.status === 'error') {
       throw new Error(response.data.response);
     }
-    return response.data.response;
+    return { text: response.data.response, tool_data: response.data.tool_data };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.response) {

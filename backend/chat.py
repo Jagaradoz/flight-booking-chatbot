@@ -84,12 +84,14 @@ def _execute_tool_call(tool_call) -> str:
     return json.dumps(result)
 
 
-def chat(user_message: str) -> str:
-    """Process a user message and return the assistant's response."""
+def chat(user_message: str) -> dict:
+    """Process a user message and return the assistant's response with tool data."""
     if not conversation_history:
         conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
 
     conversation_history.append({"role": "user", "content": user_message})
+
+    tool_data: list[dict] = []
 
     while True:
         response = _get_client().chat.completions.create(
@@ -105,11 +107,19 @@ def chat(user_message: str) -> str:
 
         if message.tool_calls:
             for tool_call in message.tool_calls:
-                result = _execute_tool_call(tool_call)
+                result_json = _execute_tool_call(tool_call)
                 conversation_history.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": result,
+                    "content": result_json,
+                })
+                try:
+                    parsed = json.loads(result_json)
+                except json.JSONDecodeError:
+                    parsed = {}
+                tool_data.append({
+                    "tool": tool_call.function.name,
+                    "result": parsed,
                 })
         else:
-            return message.content
+            return {"text": message.content, "tool_data": tool_data}
