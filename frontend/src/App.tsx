@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { ChatInput } from './components/ChatInput';
 import { RightPanel } from './components/RightPanel';
+import { Button } from './components/ui/button';
 import {
   sendMessage, resetConversation, checkHealth, fetchFlights,
   fetchSeatMap, selectSeatApi, setBaggageApi, setMealApi,
@@ -10,6 +11,7 @@ import {
 } from './lib/api';
 import type { ToolData } from './lib/api';
 import { Message, Flight, Seat, SeatMap, Booking } from './types';
+import { RotateCcw, X } from 'lucide-react';
 
 const STREAM_STEP_MS = 22;
 const STREAM_FAST_STEP_MS = 14;
@@ -31,6 +33,7 @@ function App() {
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(true);
+  const [isPanelDrawerOpen, setIsPanelDrawerOpen] = useState(false);
   const activeViewKeyRef = useRef(0);
   const selectedFlightIdRef = useRef<string | null>(null);
   const isProcessingRef = useRef(false);
@@ -164,6 +167,18 @@ function App() {
   useEffect(() => () => {
     clearStreamingTimeout();
   }, []);
+
+  useEffect(() => {
+    if (!isPanelDrawerOpen) {
+      document.body.style.overflow = '';
+      return;
+    }
+
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isPanelDrawerOpen]);
 
   const switchView = (view: 'flights' | 'seats' | 'addons' | 'booking') => {
     activeViewKeyRef.current += 1;
@@ -334,6 +349,7 @@ function App() {
       setIsConfirming(false);
       setBookingStep('search');
       switchView('flights');
+      setIsPanelDrawerOpen(false);
       setSelectedFlightId(null);
       setSelectedSeatId(null);
       selectedFlightIdRef.current = null;
@@ -498,6 +514,41 @@ function App() {
     }
   };
 
+  const togglePanelDrawer = () => {
+    setIsPanelDrawerOpen((prev) => !prev);
+  };
+
+  const closePanelDrawer = () => {
+    setIsPanelDrawerOpen(false);
+  };
+
+  const rightPanelContent = (
+    <RightPanel
+      flights={flights}
+      seatMap={seatMap}
+      booking={booking}
+      baggage={baggage}
+      mealPreference={mealPreference}
+      activeView={activeView}
+      selectedFlightId={selectedFlightId}
+      selectedSeatId={selectedSeatId}
+      bookingStep={bookingStep}
+      disabled={isProcessing}
+      isConfirming={isConfirming}
+      onBookFlight={handleBookFlight}
+      onSeatSelect={handleSeatSelect}
+      onBackFromSeats={handleBackFromSeats}
+      onNextFromSeats={handleNextFromSeats}
+      onBackFromAddOns={handleBackFromAddOns}
+      onBaggageChange={handleBaggageChange}
+      onMealChange={handleMealChange}
+      onNextFromAddOns={handleNextFromAddOns}
+      onBackFromBooking={handleBackFromBooking}
+      onCreateBooking={handleCreateBooking}
+      onConfirmBooking={handleConfirmBooking}
+    />
+  );
+
   return (
     <div className="flex flex-col h-screen">
       {!isConnected && (
@@ -505,38 +556,58 @@ function App() {
           Cannot connect to server. Please ensure the backend is running on http://localhost:8000
         </div>
       )}
-      <Header onReset={handleReset} />
-      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
-        <div className="flex flex-col w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border">
+      <Header onReset={handleReset} onTogglePanel={togglePanelDrawer} isPanelOpen={isPanelDrawerOpen} />
+      <div className="relative flex flex-1 min-h-0 overflow-hidden lg:flex-row">
+        <div className="flex min-h-0 w-full flex-1 flex-col lg:w-1/2 lg:border-r border-border">
           <ChatWindow messages={messages} isLoading={isLoading} streamingMessage={streamingMessage} bookingStep={bookingStep} />
           <ChatInput onSendMessage={handleSendMessage} isBusy={isAssistantBusy} focusRequestKey={inputFocusKey} resetRequestKey={inputResetKey} />
         </div>
-        <div className="w-full lg:w-1/2 overflow-hidden">
-          <RightPanel
-            flights={flights}
-            seatMap={seatMap}
-            booking={booking}
-            baggage={baggage}
-            mealPreference={mealPreference}
-            activeView={activeView}
-            selectedFlightId={selectedFlightId}
-            selectedSeatId={selectedSeatId}
-            bookingStep={bookingStep}
-            disabled={isProcessing}
-            isConfirming={isConfirming}
-            onBookFlight={handleBookFlight}
-            onSeatSelect={handleSeatSelect}
-            onBackFromSeats={handleBackFromSeats}
-            onNextFromSeats={handleNextFromSeats}
-            onBackFromAddOns={handleBackFromAddOns}
-            onBaggageChange={handleBaggageChange}
-            onMealChange={handleMealChange}
-            onNextFromAddOns={handleNextFromAddOns}
-            onBackFromBooking={handleBackFromBooking}
-            onCreateBooking={handleCreateBooking}
-            onConfirmBooking={handleConfirmBooking}
-          />
+        <div className="hidden lg:block lg:w-1/2 lg:overflow-hidden">
+          {rightPanelContent}
         </div>
+
+        <div
+          className={`lg:hidden fixed inset-0 z-[80] transition-opacity duration-300 ${isPanelDrawerOpen ? 'pointer-events-auto bg-foreground/20 opacity-100 backdrop-blur-[2px]' : 'pointer-events-none opacity-0'}`}
+          onClick={closePanelDrawer}
+          aria-hidden="true"
+        />
+        <aside
+          id="mobile-right-panel"
+          className={`lg:hidden fixed inset-y-0 right-0 z-[90] flex h-screen w-full max-w-none flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-out md:w-[70vw] ${isPanelDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          aria-hidden={!isPanelDrawerOpen}
+        >
+          <div className="flex items-start justify-between border-b border-border px-4 py-3 gap-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Trip panel</p>
+              <p className="text-xs text-muted-foreground">Flights, seats, extras, and booking details</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground focus-visible:ring-destructive"
+                onClick={handleReset}
+                aria-label="Reset booking flow"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="h-9 w-9"
+                onClick={closePanelDrawer}
+                aria-label="Close trip panel"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {rightPanelContent}
+          </div>
+        </aside>
       </div>
     </div>
   );

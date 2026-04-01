@@ -1,11 +1,13 @@
 import { Button } from './ui/button';
-import { RotateCcw, Plane } from 'lucide-react';
+import { Menu, Plane, RotateCcw, X } from 'lucide-react';
 
 interface HeaderProps {
   onReset: () => void;
+  onTogglePanel: () => void;
+  isPanelOpen: boolean;
 }
 
-export function Header({ onReset }: HeaderProps) {
+export function Header({ onReset, onTogglePanel, isPanelOpen }: HeaderProps) {
   return (
     <header className="border-b bg-card shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
@@ -18,10 +20,28 @@ export function Header({ onReset }: HeaderProps) {
             <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Conversational booking assistant</p>
           </div>
         </div>
-        <Button onClick={onReset} variant="outline" size="sm" className="gap-2 flex-shrink-0">
-          <RotateCcw className="h-4 w-4" />
-          <span className="hidden sm:inline">Reset</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={onReset}
+            variant="outline"
+            size="sm"
+            className="hidden gap-2 lg:inline-flex"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Reset</span>
+          </Button>
+          <Button
+            onClick={onTogglePanel}
+            variant="outline"
+            size="icon"
+            className="lg:hidden"
+            aria-label={isPanelOpen ? 'Close trip panel' : 'Open trip panel'}
+            aria-expanded={isPanelOpen}
+            aria-controls="mobile-right-panel"
+          >
+            {isPanelOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
     </header>
   );
