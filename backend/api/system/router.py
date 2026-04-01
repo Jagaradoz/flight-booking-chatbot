@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-import state
-from chat import reset_conversation
+import session_state
+from ai.chat_orchestrator import reset_conversation
 
 router = APIRouter(tags=["system"])
 
@@ -14,5 +14,5 @@ def health():
 @router.post("/reset")
 def reset():
     reset_conversation()
-    state.reset()
+    session_state.reset()
     return {"message": "Conversation reset", "status": "success"}

@@ -2,14 +2,13 @@ import json
 import logging
 import os
 
+from ai.tool_definitions import TOOL_DEFINITIONS
+from domain.addons import add_baggage, set_meal_preference
+from domain.bookings import create_booking, confirm_booking, get_booking_summary
+from domain.flights import filter_flights, get_flight_details, search_flights
+from domain.seats import get_seat_map, select_seat
 from dotenv import load_dotenv
 from openai import OpenAI
-
-from tools.definitions import TOOL_DEFINITIONS
-from tools.flights import search_flights, filter_flights, get_flight_details
-from tools.seats import get_seat_map, select_seat
-from tools.addons import add_baggage, set_meal_preference
-from tools.bookings import create_booking, confirm_booking, get_booking_summary
 
 load_dotenv()
 
@@ -32,6 +31,7 @@ def _get_client() -> OpenAI:
             )
         _client = OpenAI(api_key=api_key)
     return _client
+
 
 SYSTEM_PROMPT = """You are a friendly and professional flight booking assistant. Your job is to help users search for flights, select seats, add baggage, choose meals, and complete their bookings through natural conversation.
 
@@ -109,7 +109,7 @@ def chat(user_message: str) -> dict:
 
     tool_data: list[dict] = []
 
-    for iteration in range(MAX_TOOL_ITERATIONS):
+    for _ in range(MAX_TOOL_ITERATIONS):
         response = _get_client().chat.completions.create(
             model=MODEL,
             messages=conversation_history,
@@ -140,5 +140,12 @@ def chat(user_message: str) -> dict:
         else:
             return {"text": message.content, "tool_data": tool_data}
 
-    logger.warning("Tool loop hit max iterations (%d) for message: %s", MAX_TOOL_ITERATIONS, user_message[:100])
-    return {"text": "I'm sorry, I wasn't able to complete that request. Please try again.", "tool_data": tool_data}
+    logger.warning(
+        "Tool loop hit max iterations (%d) for message: %s",
+        MAX_TOOL_ITERATIONS,
+        user_message[:100],
+    )
+    return {
+        "text": "I'm sorry, I wasn't able to complete that request. Please try again.",
+        "tool_data": tool_data,
+    }

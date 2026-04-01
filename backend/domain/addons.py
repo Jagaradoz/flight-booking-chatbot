@@ -1,4 +1,4 @@
-import state
+import session_state
 
 BAGGAGE_PRICE_PER_BAG = 30
 
@@ -20,7 +20,7 @@ def add_baggage(checked_bags: int) -> dict:
     if checked_bags > 5:
         return {"error": "Maximum of 5 checked bags allowed per passenger."}
 
-    state.session["baggage"] = checked_bags
+    session_state.session["baggage"] = checked_bags
     total_cost = checked_bags * BAGGAGE_PRICE_PER_BAG
 
     return {
@@ -41,7 +41,7 @@ def set_meal_preference(meal_type: str) -> dict:
             "available_options": MEAL_OPTIONS,
         }
 
-    state.session["meal_preference"] = meal_type
+    session_state.session["meal_preference"] = meal_type
 
     return {
         "message": f"Meal preference set to '{meal_type}'.",

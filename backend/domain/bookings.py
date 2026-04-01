@@ -1,9 +1,9 @@
 import secrets
 import string
 
+import session_state
 from data.airports import get_airport_info
-from tools.addons import BAGGAGE_PRICE_PER_BAG
-import state
+from domain.addons import BAGGAGE_PRICE_PER_BAG
 
 
 def _generate_confirmation_code() -> str:
@@ -27,16 +27,16 @@ def build_confirmation_summary(booking: dict) -> str:
 
 def create_booking(passenger_name: str, passenger_email: str) -> dict:
     """Initialize a booking with passenger details."""
-    flight = state.session.get("selected_flight")
+    flight = session_state.session.get("selected_flight")
     if not flight:
         return {"error": "No flight selected. Please search and select a flight first."}
 
-    state.session["passenger_name"] = passenger_name
-    state.session["passenger_email"] = passenger_email
+    session_state.session["passenger_name"] = passenger_name
+    session_state.session["passenger_email"] = passenger_email
 
-    seat = state.session.get("selected_seat")
-    baggage = state.session.get("baggage", 0)
-    meal = state.session.get("meal_preference")
+    seat = session_state.session.get("selected_seat")
+    baggage = session_state.session.get("baggage", 0)
+    meal = session_state.session.get("meal_preference")
 
     base_price = flight["price"]
     seat_extra = seat["extra_cost"] if seat else 0
@@ -74,7 +74,7 @@ def create_booking(passenger_name: str, passenger_email: str) -> dict:
         },
     }
 
-    state.session["booking"] = booking
+    session_state.session["booking"] = booking
     return {
         "message": "Booking created. Please review and confirm.",
         "booking": booking,
@@ -83,7 +83,7 @@ def create_booking(passenger_name: str, passenger_email: str) -> dict:
 
 def confirm_booking() -> dict:
     """Finalize the booking and generate a confirmation code."""
-    booking = state.session.get("booking")
+    booking = session_state.session.get("booking")
     if not booking:
         return {"error": "No booking to confirm. Please create a booking first."}
 
@@ -96,7 +96,7 @@ def confirm_booking() -> dict:
     code = _generate_confirmation_code()
     booking["status"] = "confirmed"
     booking["confirmation_code"] = code
-    state.session["booking"] = booking
+    session_state.session["booking"] = booking
 
     return {
         "message": f"Booking confirmed! Your confirmation code is {code}.",
@@ -109,17 +109,17 @@ def confirm_booking() -> dict:
 
 def get_booking_summary() -> dict:
     """Show the current booking details."""
-    booking = state.session.get("booking")
+    booking = session_state.session.get("booking")
     if booking:
         return {"booking": booking}
 
-    flight = state.session.get("selected_flight")
+    flight = session_state.session.get("selected_flight")
     if not flight:
         return {"message": "No booking or flight selection in progress."}
 
-    seat = state.session.get("selected_seat")
-    baggage = state.session.get("baggage", 0)
-    meal = state.session.get("meal_preference")
+    seat = session_state.session.get("selected_seat")
+    baggage = session_state.session.get("baggage", 0)
+    meal = session_state.session.get("meal_preference")
 
     return {
         "message": "Booking not yet created. Here is your current selection:",

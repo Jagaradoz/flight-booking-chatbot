@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from api.common.responses import direct_response
-from tools.addons import add_baggage, set_meal_preference
+from domain.addons import add_baggage, set_meal_preference
 
 from .schemas import BaggageRequest, MealRequest
 

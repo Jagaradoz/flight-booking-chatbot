@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 from api.common.responses import direct_response
-from chat import append_assistant_message
-from tools.bookings import confirm_booking, create_booking
+from ai.chat_orchestrator import append_assistant_message
+from domain.bookings import confirm_booking, create_booking
 
 from .schemas import CreateBookingRequest
 

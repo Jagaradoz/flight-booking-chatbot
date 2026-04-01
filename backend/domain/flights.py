@@ -1,13 +1,13 @@
+import session_state
+from data.airports import get_airport_info, is_valid_airport
 from data.flights import FLIGHTS
-from data.airports import is_valid_airport, get_airport_info
-import state
 
 
 def _format_airport_display(code: str) -> tuple[str, str]:
     info = get_airport_info(code)
     if not info:
         return code, code
-    return f"{info['city']} ({code})", info['name']
+    return f"{info['city']} ({code})", info["name"]
 
 
 def _serialize_flight(flight: dict, passengers: int | None = None) -> dict:
@@ -58,13 +58,13 @@ def search_flights(origin: str, destination: str, date: str, passengers: int = 1
         return {"error": f"Unknown airport code: {destination}"}
 
     results = [
-        f for f in FLIGHTS
-        if f["origin"] == origin
-        and f["destination"] == destination
-        and f["date"] == date
+        flight for flight in FLIGHTS
+        if flight["origin"] == origin
+        and flight["destination"] == destination
+        and flight["date"] == date
     ]
 
-    state.session["last_search_results"] = results
+    session_state.session["last_search_results"] = results
 
     if not results:
         origin_info = get_airport_info(origin)
@@ -78,8 +78,8 @@ def search_flights(origin: str, destination: str, date: str, passengers: int = 1
         }
 
     flights_out = []
-    for f in results:
-        flights_out.append(_serialize_flight(f, passengers=passengers))
+    for flight in results:
+        flights_out.append(_serialize_flight(flight, passengers=passengers))
 
     return {
         "flights": flights_out,
@@ -95,32 +95,32 @@ def filter_flights(
     departure_before: str | None = None,
 ) -> dict:
     """Filter the last search results by price, airline, or departure time."""
-    results = state.session.get("last_search_results", [])
+    results = session_state.session.get("last_search_results", [])
     if not results:
         return {"error": "No previous search results to filter. Please search for flights first."}
 
     filtered = list(results)
 
     if max_price is not None:
-        filtered = [f for f in filtered if f["price"] <= max_price]
+        filtered = [flight for flight in filtered if flight["price"] <= max_price]
 
     if airline is not None:
-        filtered = [f for f in filtered if airline.lower() in f["airline"].lower()]
+        filtered = [flight for flight in filtered if airline.lower() in flight["airline"].lower()]
 
     if departure_after is not None:
-        filtered = [f for f in filtered if f["departure_time"] >= departure_after]
+        filtered = [flight for flight in filtered if flight["departure_time"] >= departure_after]
 
     if departure_before is not None:
-        filtered = [f for f in filtered if f["departure_time"] <= departure_before]
+        filtered = [flight for flight in filtered if flight["departure_time"] <= departure_before]
 
-    state.session["last_search_results"] = filtered
+    session_state.session["last_search_results"] = filtered
 
     if not filtered:
         return {"flights": [], "message": "No flights match the applied filters."}
 
     flights_out = []
-    for f in filtered:
-        flights_out.append(_serialize_flight(f))
+    for flight in filtered:
+        flights_out.append(_serialize_flight(flight))
 
     return {"flights": flights_out, "count": len(flights_out)}
 
@@ -128,13 +128,21 @@ def filter_flights(
 def get_flight_details(flight_id: str) -> dict:
     """Get detailed information for a specific flight."""
     flight_id = flight_id.upper()
-    flight = next((f for f in FLIGHTS if f["flight_id"] == flight_id), None)
+    flight = next((flight for flight in FLIGHTS if flight["flight_id"] == flight_id), None)
 
     if not flight:
         return {"error": f"Flight {flight_id} not found."}
 
-    origin_info = get_airport_info(flight["origin"]) or {"name": flight["origin"], "city": flight["origin"], "country": "Unknown"}
-    dest_info = get_airport_info(flight["destination"]) or {"name": flight["destination"], "city": flight["destination"], "country": "Unknown"}
+    origin_info = get_airport_info(flight["origin"]) or {
+        "name": flight["origin"],
+        "city": flight["origin"],
+        "country": "Unknown",
+    }
+    dest_info = get_airport_info(flight["destination"]) or {
+        "name": flight["destination"],
+        "city": flight["destination"],
+        "country": "Unknown",
+    }
 
     return {
         "flight_id": flight["flight_id"],

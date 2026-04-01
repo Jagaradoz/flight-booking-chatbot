@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from api.common.responses import direct_response
-from tools.seats import get_seat_map, select_seat
+from domain.seats import get_seat_map, select_seat
 
 from .schemas import SeatMapRequest, SelectSeatRequest
 

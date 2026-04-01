@@ -1,0 +1,1 @@
+"""AI-specific adapters, prompts, and tool schemas."""

@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from chat import chat
+from ai.chat_orchestrator import chat
 
 from .schemas import ChatRequest
 

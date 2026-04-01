@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from tools.flights import list_flights
+from domain.flights import list_flights
 
 router = APIRouter(tags=["flights"])
 
