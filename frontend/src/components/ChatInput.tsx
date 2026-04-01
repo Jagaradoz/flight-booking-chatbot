@@ -1,27 +1,46 @@
-import { useState, KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, KeyboardEvent, RefObject } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Send } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
-  disabled: boolean;
+  isBusy: boolean;
+  focusRequestKey?: number;
+  resetRequestKey?: number;
+  inputRef?: RefObject<HTMLInputElement>;
 }
 
-export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
+export function ChatInput({ onSendMessage, isBusy, focusRequestKey = 0, resetRequestKey = 0, inputRef }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
+  const internalInputRef = useRef<HTMLInputElement>(null);
+  const resolvedInputRef = inputRef ?? internalInputRef;
+
+  useEffect(() => {
+    resolvedInputRef.current?.focus();
+  }, [focusRequestKey, resolvedInputRef]);
+
+  useEffect(() => {
+    setInputValue('');
+    resolvedInputRef.current?.focus();
+  }, [resetRequestKey, resolvedInputRef]);
 
   const handleSend = () => {
-    if (inputValue.trim() && !disabled) {
+    if (inputValue.trim() && !isBusy) {
       onSendMessage(inputValue.trim());
       setInputValue('');
+      requestAnimationFrame(() => {
+        resolvedInputRef.current?.focus();
+      });
     }
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (!isBusy) {
+        handleSend();
+      }
     }
   };
 
@@ -30,18 +49,19 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
       <div className="container mx-auto flex gap-2">
         <Input
           type="text"
-          placeholder="Type your message..."
+          placeholder={isBusy ? 'Assistant is responding...' : 'Type your message...'}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={disabled}
-          className="flex-1 text-sm sm:text-base"
+          onKeyDown={handleKeyDown}
+          ref={resolvedInputRef}
+          className="flex-1 text-sm sm:text-base focus-visible:ring-0 focus-visible:ring-offset-0"
           autoFocus
         />
         <Button
           onClick={handleSend}
-          disabled={disabled || !inputValue.trim()}
+          disabled={isBusy || !inputValue.trim()}
           size="icon"
+          aria-label="Send message"
           className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
         >
           <Send className="h-4 w-4" />

@@ -16,6 +16,7 @@ const STEPS = [
 export function CollapsibleProgress({ currentStep }: CollapsibleProgressProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const currentIndex = STEPS.findIndex(s => s.id === currentStep);
+  const isFinished = currentStep === 'confirm';
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,8 +47,8 @@ export function CollapsibleProgress({ currentStep }: CollapsibleProgressProps) {
           >
             <div className="flex items-center gap-1">
               {STEPS.map((step, index) => {
-                const isCompleted = index < currentIndex;
-                const isCurrent = index === currentIndex;
+                const isCompleted = isFinished || index < currentIndex;
+                const isCurrent = !isFinished && index === currentIndex;
                 
                 return (
                   <div
@@ -63,7 +64,7 @@ export function CollapsibleProgress({ currentStep }: CollapsibleProgressProps) {
                 );
               })}
             </div>
-            <span>Step {currentIndex + 1}/5</span>
+            <span>{isFinished ? 'Complete' : `Step ${currentIndex + 1}/5`}</span>
             <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         ) : (
@@ -77,8 +78,8 @@ export function CollapsibleProgress({ currentStep }: CollapsibleProgressProps) {
             </button>
             <div className="grid grid-cols-5 gap-3 sm:gap-4">
               {STEPS.map((step, index) => {
-                const isCompleted = index < currentIndex;
-                const isCurrent = index === currentIndex;
+                const isCompleted = isFinished || index < currentIndex;
+                const isCurrent = !isFinished && index === currentIndex;
                 const isUpcoming = index > currentIndex;
 
                 return (

@@ -3,6 +3,50 @@ from data.airports import is_valid_airport, get_airport_info
 import state
 
 
+def _format_airport_display(code: str) -> tuple[str, str]:
+    info = get_airport_info(code)
+    if not info:
+        return code, code
+    return f"{info['city']} ({code})", info['name']
+
+
+def _serialize_flight(flight: dict, passengers: int | None = None) -> dict:
+    origin_display, origin_airport = _format_airport_display(flight["origin"])
+    destination_display, destination_airport = _format_airport_display(flight["destination"])
+
+    serialized = {
+        "flight_id": flight["flight_id"],
+        "airline": flight["airline"],
+        "origin": flight["origin"],
+        "destination": flight["destination"],
+        "origin_display": origin_display,
+        "destination_display": destination_display,
+        "origin_airport": origin_airport,
+        "destination_airport": destination_airport,
+        "departure_time": flight["departure_time"],
+        "arrival_time": flight["arrival_time"],
+        "duration": flight["duration"],
+        "price": flight["price"],
+        "aircraft": flight["aircraft"],
+        "date": flight["date"],
+    }
+
+    if passengers is not None:
+        serialized["price_per_passenger"] = flight["price"]
+        serialized["total_price"] = flight["price"] * passengers
+
+    return serialized
+
+
+def list_flights() -> dict:
+    """Return the full flight catalog for initial browsing."""
+    flights_out = []
+    for flight in FLIGHTS:
+        flights_out.append(_serialize_flight(flight))
+
+    return {"flights": flights_out, "count": len(flights_out)}
+
+
 def search_flights(origin: str, destination: str, date: str, passengers: int = 1) -> dict:
     """Search flights by origin, destination, and date."""
     origin = origin.upper()
@@ -35,18 +79,7 @@ def search_flights(origin: str, destination: str, date: str, passengers: int = 1
 
     flights_out = []
     for f in results:
-        flights_out.append({
-            "flight_id": f["flight_id"],
-            "airline": f["airline"],
-            "origin": f["origin"],
-            "destination": f["destination"],
-            "departure_time": f["departure_time"],
-            "arrival_time": f["arrival_time"],
-            "duration": f["duration"],
-            "price_per_passenger": f["price"],
-            "total_price": f["price"] * passengers,
-            "aircraft": f["aircraft"],
-        })
+        flights_out.append(_serialize_flight(f, passengers=passengers))
 
     return {
         "flights": flights_out,
@@ -87,17 +120,7 @@ def filter_flights(
 
     flights_out = []
     for f in filtered:
-        flights_out.append({
-            "flight_id": f["flight_id"],
-            "airline": f["airline"],
-            "origin": f["origin"],
-            "destination": f["destination"],
-            "departure_time": f["departure_time"],
-            "arrival_time": f["arrival_time"],
-            "duration": f["duration"],
-            "price": f["price"],
-            "aircraft": f["aircraft"],
-        })
+        flights_out.append(_serialize_flight(f))
 
     return {"flights": flights_out, "count": len(flights_out)}
 
@@ -110,8 +133,8 @@ def get_flight_details(flight_id: str) -> dict:
     if not flight:
         return {"error": f"Flight {flight_id} not found."}
 
-    origin_info = get_airport_info(flight["origin"])
-    dest_info = get_airport_info(flight["destination"])
+    origin_info = get_airport_info(flight["origin"]) or {"name": flight["origin"], "city": flight["origin"], "country": "Unknown"}
+    dest_info = get_airport_info(flight["destination"]) or {"name": flight["destination"], "city": flight["destination"], "country": "Unknown"}
 
     return {
         "flight_id": flight["flight_id"],

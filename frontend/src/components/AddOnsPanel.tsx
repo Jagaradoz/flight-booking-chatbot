@@ -7,6 +7,9 @@ interface AddOnsPanelProps {
   mealPreference: string | null;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
+  disabled?: boolean;
+  onBack?: () => void;
+  onNext?: () => void;
 }
 
 const MEAL_OPTIONS = [
@@ -22,9 +25,21 @@ const MEAL_OPTIONS = [
 const BAGGAGE_PRICE = 30;
 const MAX_BAGS = 5;
 
-export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealChange }: AddOnsPanelProps) {
+export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealChange, disabled, onBack, onNext }: AddOnsPanelProps) {
   return (
     <div className="p-4 sm:p-6 space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Add-Ons</h2>
+        </div>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Customize your trip with baggage and meal preferences.
+        </p>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Add-ons are optional. You can continue without selecting any extras.
+        </p>
+      </div>
+
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -40,7 +55,7 @@ export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealCh
                 variant="outline"
                 size="icon"
                 onClick={() => onBaggageChange?.(Math.max(0, baggage - 1))}
-                disabled={baggage === 0}
+                disabled={baggage === 0 || disabled}
                 className="h-9 w-9 sm:h-10 sm:w-10"
               >
                 <Minus className="h-4 w-4" />
@@ -53,7 +68,7 @@ export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealCh
                 variant="outline"
                 size="icon"
                 onClick={() => onBaggageChange?.(Math.min(MAX_BAGS, baggage + 1))}
-                disabled={baggage === MAX_BAGS}
+                disabled={baggage === MAX_BAGS || disabled}
                 className="h-9 w-9 sm:h-10 sm:w-10"
               >
                 <Plus className="h-4 w-4" />
@@ -82,6 +97,7 @@ export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealCh
                 key={option.value}
                 variant={mealPreference === option.value ? 'default' : 'outline'}
                 className="justify-start text-xs sm:text-sm"
+                disabled={disabled}
                 onClick={() => onMealChange?.(option.value)}
               >
                 {option.label}
@@ -95,6 +111,15 @@ export function AddOnsPanel({ baggage, mealPreference, onBaggageChange, onMealCh
           )}
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between pt-4">
+        <Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" disabled={disabled} onClick={onNext}>
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

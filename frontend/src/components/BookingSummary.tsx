@@ -1,12 +1,82 @@
+import { useState } from 'react';
 import { Booking } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle2, Clock, Plane, User, Mail, Utensils, Luggage, MapPin } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { CheckCircle2, Clock, Plane, User, Mail, Utensils, Luggage, MapPin, Loader2 } from 'lucide-react';
 
 interface BookingSummaryProps {
   booking: Booking | null;
+  showForm?: boolean;
+  isConfirming?: boolean;
+  disabled?: boolean;
+  onBack?: () => void;
+  onCreateBooking?: (name: string, email: string) => void;
+  onConfirm?: () => void;
 }
 
-export function BookingSummary({ booking }: BookingSummaryProps) {
+export function BookingSummary({ booking, showForm, isConfirming, disabled, onBack, onCreateBooking, onConfirm }: BookingSummaryProps) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  if (!booking && showForm) {
+    const isValidEmail = email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    const canSubmit = name.trim().length > 0 && isValidEmail && !disabled;
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (canSubmit) {
+        onCreateBooking?.(name.trim(), email.trim());
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              Passenger Details
+            </CardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground">Enter your details to create a booking</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground" htmlFor="passenger-name">Full Name</label>
+                <Input
+                  id="passenger-name"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground" htmlFor="passenger-email">Email</label>
+                <Input
+                  id="passenger-email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
+                  Back
+                </Button>
+                <Button type="submit" disabled={!canSubmit}>
+                  Next
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!booking) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -23,6 +93,17 @@ export function BookingSummary({ booking }: BookingSummaryProps) {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+            {isConfirmed ? 'Booking Confirmed' : 'Booking Confirmation'}
+          </h2>
+        </div>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          {isConfirmed ? 'Your trip is confirmed and your booking details are ready below.' : 'Review your itinerary and confirm your booking when you are ready.'}
+        </p>
+      </div>
+
       <Card className={isConfirmed ? 'border-success border-2' : 'border-border'}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -34,7 +115,7 @@ export function BookingSummary({ booking }: BookingSummaryProps) {
             ) : (
               <>
                 <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
-                Booking Pending
+                Pending Confirmation
               </>
             )}
           </CardTitle>
@@ -148,6 +229,24 @@ export function BookingSummary({ booking }: BookingSummaryProps) {
               </div>
             </div>
           </div>
+
+          {!isConfirmed && (
+            <div className="pt-4">
+              <Button onClick={onConfirm} className="w-full" disabled={isConfirming || disabled}>
+                {isConfirming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Confirming...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    CONFIRM
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

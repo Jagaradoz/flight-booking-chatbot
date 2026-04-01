@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Flight, SeatMap as SeatMapType, Booking } from '@/types';
 import { FlightTable } from './FlightTable';
 import { SeatMap } from './SeatMap';
 import { AddOnsPanel } from './AddOnsPanel';
 import { BookingSummary } from './BookingSummary';
-import { Button } from './ui/button';
-import { Plane, Armchair, ShoppingBag, FileText } from 'lucide-react';
 
 type ViewMode = 'flights' | 'seats' | 'addons' | 'booking';
+type BookingStep = 'search' | 'select' | 'customize' | 'book' | 'confirm';
 
 interface RightPanelProps {
   flights: Flight[];
@@ -15,9 +14,23 @@ interface RightPanelProps {
   booking: Booking | null;
   baggage: number;
   mealPreference: string | null;
+  activeView?: { view: ViewMode; key: number } | null;
+  selectedFlightId?: string | null;
+  selectedSeatId?: string | null;
+  bookingStep: BookingStep;
+  disabled?: boolean;
+  isConfirming?: boolean;
+  onBookFlight?: (flightId: string) => void;
   onSeatSelect?: (seatId: string) => void;
+  onBackFromSeats?: () => void;
+  onNextFromSeats?: () => void;
+  onBackFromAddOns?: () => void;
   onBaggageChange?: (count: number) => void;
   onMealChange?: (meal: string) => void;
+  onNextFromAddOns?: () => void;
+  onBackFromBooking?: () => void;
+  onCreateBooking?: (name: string, email: string) => void;
+  onConfirmBooking?: () => void;
 }
 
 export function RightPanel({
@@ -26,74 +39,84 @@ export function RightPanel({
   booking,
   baggage,
   mealPreference,
+  activeView,
+  selectedFlightId,
+  selectedSeatId,
+  bookingStep,
+  disabled,
+  isConfirming,
+  onBookFlight,
   onSeatSelect,
+  onBackFromSeats,
+  onNextFromSeats,
+  onBackFromAddOns,
   onBaggageChange,
   onMealChange,
+  onNextFromAddOns,
+  onBackFromBooking,
+  onCreateBooking,
+  onConfirmBooking,
 }: RightPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('flights');
 
-  const hasFlights = flights.length > 0;
-  const hasSeatMap = seatMap !== null;
-  const hasBooking = booking !== null;
+  useEffect(() => {
+    if (activeView) {
+      setViewMode(activeView.view);
+      return;
+    }
+
+    if (bookingStep === 'search' || bookingStep === 'select') {
+      setViewMode('flights');
+    }
+  }, [activeView, bookingStep]);
+
+  const effectiveView = bookingStep === 'search' || bookingStep === 'select'
+    ? 'flights'
+    : viewMode;
 
   return (
-    <div className="flex flex-col h-full bg-card">
-      <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3">
-        <div className="flex gap-1 sm:gap-2 overflow-x-auto">
-          <Button
-            variant={viewMode === 'flights' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('flights')}
-            className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
-          >
-            <Plane className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Flights</span>
-            {hasFlights && <span className="ml-0.5 sm:ml-1 text-xs font-medium">{flights.length}</span>}
-          </Button>
-          <Button
-            variant={viewMode === 'seats' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('seats')}
-            disabled={!hasSeatMap}
-            className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
-          >
-            <Armchair className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Seats</span>
-          </Button>
-          <Button
-            variant={viewMode === 'addons' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('addons')}
-            className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
-          >
-            <ShoppingBag className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Add-ons</span>
-          </Button>
-          <Button
-            variant={viewMode === 'booking' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('booking')}
-            className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Booking</span>
-            {hasBooking && <span className="ml-1 w-1.5 h-1.5 bg-success rounded-full"></span>}
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
-        {viewMode === 'flights' && <FlightTable flights={flights} />}
-        {viewMode === 'seats' && <SeatMap seatMap={seatMap} onSeatSelect={onSeatSelect} />}
-        {viewMode === 'addons' && (
+        {effectiveView === 'flights' && (
+          <FlightTable
+            flights={flights}
+            selectedFlightId={selectedFlightId}
+            onBookFlight={onBookFlight}
+            disabled={disabled}
+          />
+        )}
+        {effectiveView === 'seats' && (
+          <SeatMap
+            seatMap={seatMap}
+            onSeatSelect={onSeatSelect}
+            selectedSeatId={selectedSeatId}
+            disabled={disabled}
+            onBack={onBackFromSeats}
+            onNext={onNextFromSeats}
+          />
+        )}
+        {effectiveView === 'addons' && (
           <AddOnsPanel
             baggage={baggage}
             mealPreference={mealPreference}
             onBaggageChange={onBaggageChange}
             onMealChange={onMealChange}
+            disabled={disabled}
+            onBack={onBackFromAddOns}
+            onNext={onNextFromAddOns}
           />
         )}
-        {viewMode === 'booking' && <BookingSummary booking={booking} />}
+        {effectiveView === 'booking' && (
+          <BookingSummary
+            booking={booking}
+            showForm={bookingStep === 'customize' || bookingStep === 'book'}
+            isConfirming={isConfirming}
+            disabled={disabled}
+            onBack={onBackFromBooking}
+            onCreateBooking={onCreateBooking}
+            onConfirm={onConfirmBooking}
+          />
+        )}
       </div>
     </div>
   );

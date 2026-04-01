@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -12,7 +13,10 @@ from tools.bookings import create_booking, confirm_booking, get_booking_summary
 
 load_dotenv()
 
-MODEL = "gpt-4.1-mini"
+logger = logging.getLogger(__name__)
+
+MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+MAX_TOOL_ITERATIONS = 10
 
 _client: OpenAI | None = None
 
@@ -59,6 +63,16 @@ FUNCTION_MAP = {
 conversation_history: list[dict] = []
 
 
+def ensure_conversation_initialized():
+    if not conversation_history:
+        conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
+
+
+def append_assistant_message(content: str):
+    ensure_conversation_initialized()
+    conversation_history.append({"role": "assistant", "content": content})
+
+
 def reset_conversation():
     global conversation_history
     conversation_history = []
@@ -69,29 +83,33 @@ def _execute_tool_call(tool_call) -> str:
     func = FUNCTION_MAP.get(func_name)
 
     if not func:
+        logger.warning("Unknown tool call requested: %s", func_name)
         return json.dumps({"error": f"Unknown function: {func_name}"})
 
     try:
         args = json.loads(tool_call.function.arguments)
     except json.JSONDecodeError:
+        logger.error("Failed to parse arguments for %s", func_name)
         return json.dumps({"error": "Failed to parse function arguments."})
 
     try:
         result = func(**args)
-    except Exception as e:
-        result = {"error": str(e)}
+    except Exception:
+        logger.exception("Error executing tool %s", func_name)
+        result = {"error": f"Tool '{func_name}' encountered an internal error."}
 
     return json.dumps(result)
 
 
-def chat(user_message: str) -> str:
-    """Process a user message and return the assistant's response."""
-    if not conversation_history:
-        conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
+def chat(user_message: str) -> dict:
+    """Process a user message and return the assistant's response with tool data."""
+    ensure_conversation_initialized()
 
     conversation_history.append({"role": "user", "content": user_message})
 
-    while True:
+    tool_data: list[dict] = []
+
+    for iteration in range(MAX_TOOL_ITERATIONS):
         response = _get_client().chat.completions.create(
             model=MODEL,
             messages=conversation_history,
@@ -105,11 +123,22 @@ def chat(user_message: str) -> str:
 
         if message.tool_calls:
             for tool_call in message.tool_calls:
-                result = _execute_tool_call(tool_call)
+                result_json = _execute_tool_call(tool_call)
                 conversation_history.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": result,
+                    "content": result_json,
+                })
+                try:
+                    parsed = json.loads(result_json)
+                except json.JSONDecodeError:
+                    parsed = {}
+                tool_data.append({
+                    "tool": tool_call.function.name,
+                    "result": parsed,
                 })
         else:
-            return message.content
+            return {"text": message.content, "tool_data": tool_data}
+
+    logger.warning("Tool loop hit max iterations (%d) for message: %s", MAX_TOOL_ITERATIONS, user_message[:100])
+    return {"text": "I'm sorry, I wasn't able to complete that request. Please try again.", "tool_data": tool_data}

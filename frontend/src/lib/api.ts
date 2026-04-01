@@ -1,16 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+export interface ToolData {
+  tool: string;
+  result: Record<string, unknown>;
+}
+
 export interface ChatResponse {
   response: string;
+  tool_data: ToolData[];
   status: 'success' | 'error';
 }
 
@@ -23,13 +30,24 @@ export interface HealthResponse {
   status: 'healthy';
 }
 
-export const sendMessage = async (message: string): Promise<string> => {
+export interface FlightsResponse {
+  status: 'success';
+  flights: Record<string, unknown>[];
+  count: number;
+}
+
+export interface ChatResult {
+  text: string;
+  tool_data: ToolData[];
+}
+
+export const sendMessage = async (message: string): Promise<ChatResult> => {
   try {
     const response = await api.post<ChatResponse>('/api/chat', { message });
     if (response.data.status === 'error') {
       throw new Error(response.data.response);
     }
-    return response.data.response;
+    return { text: response.data.response, tool_data: response.data.tool_data };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.response) {
@@ -59,3 +77,50 @@ export const checkHealth = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const fetchFlights = async (): Promise<Record<string, unknown>[]> => {
+  try {
+    const response = await api.get<FlightsResponse>('/api/flights');
+    return response.data.flights;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.request) {
+      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:8000');
+    }
+
+    throw new Error('Failed to load flights');
+  }
+};
+
+// --- Direct API calls (bypass AI chat) ---
+
+interface DirectResponse {
+  status: 'success' | 'error';
+  message?: string;
+  [key: string]: unknown;
+}
+
+const directCall = async <T extends DirectResponse>(url: string, body?: Record<string, unknown>): Promise<T> => {
+  const response = await api.post<T>(url, body);
+  if (response.data.status === 'error') {
+    throw new Error(response.data.message || 'An error occurred');
+  }
+  return response.data;
+};
+
+export const fetchSeatMap = (flightId: string) =>
+  directCall('/api/seat-map', { flight_id: flightId });
+
+export const selectSeatApi = (flightId: string, seatId: string) =>
+  directCall('/api/select-seat', { flight_id: flightId, seat_id: seatId });
+
+export const setBaggageApi = (checkedBags: number) =>
+  directCall('/api/baggage', { checked_bags: checkedBags });
+
+export const setMealApi = (mealType: string) =>
+  directCall('/api/meal', { meal_type: mealType });
+
+export const createBookingApi = (passengerName: string, passengerEmail: string) =>
+  directCall('/api/create-booking', { passenger_name: passengerName, passenger_email: passengerEmail });
+
+export const confirmBookingApi = () =>
+  directCall('/api/confirm-booking');

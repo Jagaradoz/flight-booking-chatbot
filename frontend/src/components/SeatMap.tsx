@@ -1,13 +1,18 @@
 import { SeatMap as SeatMapType, Seat } from '@/types';
 import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
 import { Armchair } from 'lucide-react';
 
 interface SeatMapProps {
   seatMap: SeatMapType | null;
   onSeatSelect?: (seatId: string) => void;
+  selectedSeatId?: string | null;
+  disabled?: boolean;
+  onBack?: () => void;
+  onNext?: () => void;
 }
 
-export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
+export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled, onBack, onNext }: SeatMapProps) {
   if (!seatMap) {
     return (
       <div className="flex items-center justify-center h-full p-6 sm:p-8">
@@ -21,6 +26,7 @@ export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
   }
 
   const getSeatColor = (seat: Seat) => {
+    if (seat.seat_id === selectedSeatId) return 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/50';
     if (seat.occupied) return 'bg-muted text-muted-foreground cursor-not-allowed opacity-50';
     
     switch (seat.section) {
@@ -56,6 +62,7 @@ export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
         <p className="text-xs sm:text-sm text-muted-foreground">
           {seatMap.available_seats} of {seatMap.total_seats} seats available
         </p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Seat selection is optional. You can continue without choosing one.</p>
       </div>
 
       <Card className="border-border">
@@ -89,8 +96,11 @@ export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
                     .map(seat => (
                       <button
                         key={seat.seat_id}
-                        onClick={() => !seat.occupied && onSeatSelect?.(seat.seat_id)}
-                        disabled={seat.occupied}
+                        onClick={() => !seat.occupied && !disabled && onSeatSelect?.(seat.seat_id)}
+                        disabled={seat.occupied || disabled}
+                        aria-label={`Seat ${seat.seat_id}, ${seat.section} ${seat.type}${seat.extra_cost > 0 ? `, plus $${seat.extra_cost}` : ''}${seat.occupied ? ', occupied' : ''}${seat.seat_id === selectedSeatId ? ', selected' : ''}`}
+                        aria-selected={seat.seat_id === selectedSeatId}
+                        aria-disabled={seat.occupied || disabled}
                         className={`w-9 h-9 sm:w-10 sm:h-10 text-xs font-medium border rounded transition-colors ${getSeatColor(seat)}`}
                         title={`${seat.seat_id} - ${seat.section} - ${seat.type} ${seat.extra_cost > 0 ? `+$${seat.extra_cost}` : ''}`}
                       >
@@ -104,6 +114,15 @@ export function SeatMap({ seatMap, onSeatSelect }: SeatMapProps) {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between pt-4">
+        <Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" disabled={disabled} onClick={onNext}>
+          Next
+        </Button>
+      </div>
     </div>
   );
 }
