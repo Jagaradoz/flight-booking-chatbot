@@ -5,7 +5,7 @@ import os
 from ai.tool_definitions import TOOL_DEFINITIONS
 from domain.addons import add_baggage, set_meal_preference
 from domain.bookings import create_booking, confirm_booking, get_booking_summary
-from domain.flights import filter_flights, get_flight_details, search_flights
+from domain.flights import filter_flights, get_flight_details, search_flights, select_flight
 from domain.seats import get_seat_map, select_seat
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -51,6 +51,7 @@ FUNCTION_MAP = {
     "search_flights": search_flights,
     "filter_flights": filter_flights,
     "get_flight_details": get_flight_details,
+    "select_flight": select_flight,
     "get_seat_map": get_seat_map,
     "select_seat": select_seat,
     "add_baggage": add_baggage,

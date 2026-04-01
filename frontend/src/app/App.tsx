@@ -254,6 +254,19 @@ function App() {
           switchView('flights');
           break;
         }
+        case 'select_flight': {
+          const flightId = result.flight_id as string;
+          setSelectedFlightId(flightId);
+          selectedFlightIdRef.current = flightId;
+          setSeatMap(null);
+          setSelectedSeatId(null);
+          setBaggage(0);
+          setMealPreference(null);
+          setBooking(null);
+          setBookingStep('customize');
+          switchView('flights');
+          break;
+        }
         case 'get_seat_map': {
           const mapped = parseSeatMapResponse(result);
           setSeatMap(mapped);
@@ -323,7 +336,25 @@ function App() {
       if (cycleId !== assistantCycleRef.current || sessionVersion !== sessionVersionRef.current) return;
       setIsLoading(false);
       processToolData(tool_data);
+
+      // When a flight is selected via chatbot, load the seat map concurrently with streaming
+      const selectFlightTool = tool_data.find(
+        (t) => t.tool === 'select_flight' && !t.result.error,
+      );
+      const seatMapPromise = selectFlightTool
+        ? fetchSeatMap(selectFlightTool.result.flight_id as string)
+            .then((r) => parseSeatMapResponse(r as Record<string, unknown>))
+            .catch(() => null)
+        : null;
+
       await streamAssistantMessage(text, cycleId);
+
+      if (seatMapPromise && cycleId === assistantCycleRef.current && sessionVersion === sessionVersionRef.current) {
+        const mapped = await seatMapPromise;
+        if (mapped && cycleId === assistantCycleRef.current && sessionVersion === sessionVersionRef.current) {
+          setSeatMap(mapped);
+        }
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       if (cycleId !== assistantCycleRef.current || sessionVersion !== sessionVersionRef.current) return;

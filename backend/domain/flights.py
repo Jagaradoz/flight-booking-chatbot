@@ -166,3 +166,25 @@ def get_flight_details(flight_id: str) -> dict:
         "aircraft": flight["aircraft"],
         "date": flight["date"],
     }
+
+
+def select_flight(flight_id: str) -> dict:
+    """Select a specific flight to proceed with booking."""
+    flight_id = flight_id.upper()
+    flight = next((f for f in FLIGHTS if f["flight_id"] == flight_id), None)
+
+    if not flight:
+        return {"error": f"Flight {flight_id} not found."}
+
+    session_state.session["selected_flight"] = flight
+    session_state.session["selected_seat"] = None
+    session_state.session["seat_map"] = None
+    session_state.session["baggage"] = 0
+    session_state.session["meal_preference"] = None
+    session_state.session["booking"] = None
+
+    return {
+        "message": f"Flight {flight_id} has been selected.",
+        "flight_id": flight["flight_id"],
+        "flight": _serialize_flight(flight),
+    }

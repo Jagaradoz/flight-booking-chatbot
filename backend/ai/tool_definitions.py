@@ -183,6 +183,27 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "select_flight",
+            "description": (
+                "Select a specific flight the user has chosen to proceed with booking. "
+                "Call this after the user confirms which flight they want. "
+                "This sets the flight for the booking session and resets any previous seat or add-on selections."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "flight_id": {
+                        "type": "string",
+                        "description": "The flight ID to select (e.g. TG640, AA100)",
+                    },
+                },
+                "required": ["flight_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "create_booking",
             "description": (
                 "Create a booking with passenger details. A flight must be selected first. "
