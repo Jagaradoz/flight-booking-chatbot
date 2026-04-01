@@ -20,7 +20,7 @@ export function Header({ onReset }: HeaderProps) {
         </div>
         <Button onClick={onReset} variant="outline" size="sm" className="gap-2 flex-shrink-0">
           <RotateCcw className="h-4 w-4" />
-          <span className="hidden sm:inline">New</span>
+          <span className="hidden sm:inline">Reset</span>
         </Button>
       </div>
     </header>

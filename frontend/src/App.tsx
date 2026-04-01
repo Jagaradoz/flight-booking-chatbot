@@ -11,12 +11,16 @@ import {
 import type { ToolData } from './lib/api';
 import { Message, Flight, Seat, SeatMap, Booking } from './types';
 
+const STREAM_STEP_MS = 22;
+const STREAM_FAST_STEP_MS = 14;
+
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [seatMap, setSeatMap] = useState<SeatMap | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -30,6 +34,97 @@ function App() {
   const activeViewKeyRef = useRef(0);
   const selectedFlightIdRef = useRef<string | null>(null);
   const isProcessingRef = useRef(false);
+  const processingTokenRef = useRef(0);
+  const sessionVersionRef = useRef(0);
+  const streamingTimeoutRef = useRef<number | null>(null);
+  const assistantCycleRef = useRef(0);
+  const inputFocusKeyRef = useRef(0);
+  const [inputFocusKey, setInputFocusKey] = useState(0);
+  const inputResetKeyRef = useRef(0);
+  const [inputResetKey, setInputResetKey] = useState(0);
+  const isAssistantBusy = isProcessing || isLoading || streamingMessage !== null;
+
+  const requestInputFocus = () => {
+    inputFocusKeyRef.current += 1;
+    setInputFocusKey(inputFocusKeyRef.current);
+  };
+
+  const requestInputReset = () => {
+    inputResetKeyRef.current += 1;
+    setInputResetKey(inputResetKeyRef.current);
+  };
+
+  const clearStreamingTimeout = () => {
+    if (streamingTimeoutRef.current !== null) {
+      window.clearTimeout(streamingTimeoutRef.current);
+      streamingTimeoutRef.current = null;
+    }
+  };
+
+  const getStreamingStep = (remainingLength: number) => {
+    if (remainingLength > 240) return 8;
+    if (remainingLength > 120) return 5;
+    if (remainingLength > 60) return 3;
+    return 2;
+  };
+
+  const streamAssistantMessage = (content: string, cycleId: number) => {
+    clearStreamingTimeout();
+
+    const nextMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    };
+
+    if (!content) {
+      if (cycleId !== assistantCycleRef.current) {
+        return Promise.resolve();
+      }
+      setMessages((prev) => [...prev, { ...nextMessage, content }]);
+      requestInputFocus();
+      return Promise.resolve();
+    }
+
+    setStreamingMessage(nextMessage);
+
+    return new Promise<void>((resolve) => {
+      let visibleLength = 0;
+
+      const tick = () => {
+        if (cycleId !== assistantCycleRef.current) {
+          clearStreamingTimeout();
+          setStreamingMessage(null);
+          resolve();
+          return;
+        }
+
+        visibleLength = Math.min(content.length, visibleLength + getStreamingStep(content.length - visibleLength));
+        const partialContent = content.slice(0, visibleLength);
+
+        setStreamingMessage((prev) => (
+          prev
+            ? { ...prev, content: partialContent }
+            : { ...nextMessage, content: partialContent }
+        ));
+
+        if (visibleLength >= content.length) {
+          clearStreamingTimeout();
+          setMessages((prev) => [...prev, { ...nextMessage, content }]);
+          setStreamingMessage(null);
+          requestInputFocus();
+          resolve();
+          return;
+        }
+
+        const delay = content.length > 180 ? STREAM_FAST_STEP_MS : STREAM_STEP_MS;
+        streamingTimeoutRef.current = window.setTimeout(tick, delay);
+      };
+
+      streamingTimeoutRef.current = window.setTimeout(tick, STREAM_FAST_STEP_MS);
+    });
+  };
 
   const mapFlights = (rawFlights: Record<string, unknown>[]): Flight[] => (
     rawFlights.map((flight) => ({
@@ -37,6 +132,10 @@ function App() {
       airline: flight.airline as string,
       origin: flight.origin as string,
       destination: flight.destination as string,
+      origin_display: flight.origin_display as string | undefined,
+      destination_display: flight.destination_display as string | undefined,
+      origin_airport: flight.origin_airport as string | undefined,
+      destination_airport: flight.destination_airport as string | undefined,
       departure_time: flight.departure_time as string,
       arrival_time: flight.arrival_time as string,
       duration: flight.duration as string,
@@ -47,8 +146,10 @@ function App() {
   );
 
   const loadInitialFlights = async () => {
+    const sessionVersion = sessionVersionRef.current;
     try {
       const rawFlights = await fetchFlights();
+      if (sessionVersion !== sessionVersionRef.current) return;
       setFlights(mapFlights(rawFlights));
     } catch (error) {
       console.error('Failed to load flights:', error);
@@ -60,6 +161,10 @@ function App() {
     loadInitialFlights();
   }, []);
 
+  useEffect(() => () => {
+    clearStreamingTimeout();
+  }, []);
+
   const switchView = (view: 'flights' | 'seats' | 'addons' | 'booking') => {
     activeViewKeyRef.current += 1;
     setActiveView({ view, key: activeViewKeyRef.current });
@@ -67,12 +172,16 @@ function App() {
 
   const lockProcessing = () => {
     if (isProcessingRef.current) return false;
+    processingTokenRef.current += 1;
     isProcessingRef.current = true;
     setIsProcessing(true);
-    return true;
+    return processingTokenRef.current;
   };
 
-  const unlockProcessing = () => {
+  const unlockProcessing = (token?: number) => {
+    if (typeof token === 'number' && token !== processingTokenRef.current) {
+      return;
+    }
     isProcessingRef.current = false;
     setIsProcessing(false);
   };
@@ -175,7 +284,10 @@ function App() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const cycleId = assistantCycleRef.current;
+    const sessionVersion = sessionVersionRef.current;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -189,55 +301,55 @@ function App() {
 
     try {
       const { text, tool_data } = await sendMessage(content);
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: text,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      if (cycleId !== assistantCycleRef.current || sessionVersion !== sessionVersionRef.current) return;
+      setIsLoading(false);
       processToolData(tool_data);
+      await streamAssistantMessage(text, cycleId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      if (cycleId !== assistantCycleRef.current || sessionVersion !== sessionVersionRef.current) return;
 
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Error: ${errorMessage}`,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, errorResponse]);
-    } finally {
       setIsLoading(false);
-      unlockProcessing();
+      await streamAssistantMessage(`Error: ${errorMessage}`, cycleId);
+    } finally {
+      unlockProcessing(processingToken);
     }
   };
 
   const handleReset = async () => {
     try {
+      processingTokenRef.current += 1;
+      sessionVersionRef.current += 1;
+      assistantCycleRef.current += 1;
       await resetConversation();
+      clearStreamingTimeout();
       setMessages([]);
+      setStreamingMessage(null);
+      setIsLoading(false);
       setFlights([]);
       setSeatMap(null);
       setBooking(null);
       setBaggage(0);
       setMealPreference(null);
+      setIsConfirming(false);
       setBookingStep('search');
-      setActiveView(null);
+      switchView('flights');
       setSelectedFlightId(null);
       setSelectedSeatId(null);
       selectedFlightIdRef.current = null;
+      unlockProcessing();
       loadInitialFlights();
+      requestInputReset();
+      requestInputFocus();
     } catch (err) {
       console.error('Failed to reset conversation:', err);
     }
   };
 
   const handleBookFlight = async (flightId: string) => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     try {
       if (selectedFlightId !== flightId) {
         setSeatMap(null);
@@ -247,6 +359,7 @@ function App() {
         setBooking(null);
       }
       const result = await fetchSeatMap(flightId);
+      if (sessionVersion !== sessionVersionRef.current) return;
       const mapped = parseSeatMapResponse(result as Record<string, unknown>);
       setSeatMap(mapped);
       setSelectedFlightId(flightId);
@@ -256,7 +369,7 @@ function App() {
     } catch (err) {
       console.error('Failed to load seat map:', err);
     } finally {
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
@@ -282,9 +395,13 @@ function App() {
 
   const handleSeatSelect = async (seatId: string) => {
     const flightId = selectedFlightIdRef.current;
-    if (!flightId || !lockProcessing()) return;
+    if (!flightId) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     try {
       const result = await selectSeatApi(flightId, seatId);
+      if (sessionVersion !== sessionVersionRef.current) return;
       const seat = result.seat as Record<string, unknown> | undefined;
       if (seat) {
         setSelectedSeatId(seat.seat_id as string);
@@ -293,40 +410,49 @@ function App() {
     } catch (err) {
       console.error('Failed to select seat:', err);
     } finally {
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
   const handleBaggageChange = async (count: number) => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     try {
       await setBaggageApi(count);
+      if (sessionVersion !== sessionVersionRef.current) return;
       setBaggage(count);
       invalidateBookingIfPending();
     } catch (err) {
       console.error('Failed to update baggage:', err);
     } finally {
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
   const handleMealChange = async (meal: string) => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     try {
       await setMealApi(meal);
+      if (sessionVersion !== sessionVersionRef.current) return;
       setMealPreference(meal);
       invalidateBookingIfPending();
     } catch (err) {
       console.error('Failed to update meal:', err);
     } finally {
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
   const handleCreateBooking = async (name: string, email: string) => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     try {
       const result = await createBookingApi(name, email);
+      if (sessionVersion !== sessionVersionRef.current) return;
       const b = result.booking as Booking | undefined;
       if (b) {
         setBooking(b);
@@ -336,15 +462,18 @@ function App() {
     } catch (err) {
       console.error('Failed to create booking:', err);
     } finally {
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
   const handleConfirmBooking = async () => {
-    if (!lockProcessing()) return;
+    const processingToken = lockProcessing();
+    if (!processingToken) return;
+    const sessionVersion = sessionVersionRef.current;
     setIsConfirming(true);
     try {
       const result = await confirmBookingApi();
+      if (sessionVersion !== sessionVersionRef.current) return;
       const b = result.booking as Booking | undefined;
       if (b) {
         setBooking(b);
@@ -352,10 +481,11 @@ function App() {
         switchView('booking');
 
         const code = result.confirmation_code as string;
+        const assistantSummary = (result.assistant_summary as string | undefined) ?? `Your booking has been confirmed!\n\n**Confirmation Code: ${code}**\n\n- **Passenger:** ${b.passenger.name}\n- **Flight:** ${b.flight.flight_id} — ${b.flight.origin} → ${b.flight.destination}\n- **Date:** ${b.flight.date}\n- **Seat:** ${b.seat}\n- **Total:** $${b.pricing.total}\n\nThank you for booking with us!`;
         const assistantMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `Your booking has been confirmed! 🎉\n\n**Confirmation Code: ${code}**\n\n- **Passenger:** ${b.passenger.name}\n- **Flight:** ${b.flight.flight_id} — ${b.flight.origin} → ${b.flight.destination}\n- **Date:** ${b.flight.date}\n- **Seat:** ${b.seat}\n- **Total:** $${b.pricing.total}\n\nThank you for booking with us!`,
+          content: assistantSummary,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
@@ -364,7 +494,7 @@ function App() {
       console.error('Failed to confirm booking:', err);
     } finally {
       setIsConfirming(false);
-      unlockProcessing();
+      unlockProcessing(processingToken);
     }
   };
 
@@ -378,8 +508,8 @@ function App() {
       <Header onReset={handleReset} />
       <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
         <div className="flex flex-col w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border">
-          <ChatWindow messages={messages} isLoading={isLoading} bookingStep={bookingStep} />
-          <ChatInput onSendMessage={handleSendMessage} disabled={isProcessing} />
+          <ChatWindow messages={messages} isLoading={isLoading} streamingMessage={streamingMessage} bookingStep={bookingStep} />
+          <ChatInput onSendMessage={handleSendMessage} isBusy={isAssistantBusy} focusRequestKey={inputFocusKey} resetRequestKey={inputResetKey} />
         </div>
         <div className="w-full lg:w-1/2 overflow-hidden">
           <RightPanel

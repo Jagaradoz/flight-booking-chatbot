@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from chat import chat, reset_conversation
+from chat import append_assistant_message, chat, reset_conversation
 import state
 from tools.flights import list_flights
 from tools.seats import get_seat_map, select_seat
@@ -111,4 +111,7 @@ def create_booking_endpoint(request: CreateBookingRequest):
 
 @app.post("/api/confirm-booking")
 def confirm_booking_endpoint():
-    return _direct_response(confirm_booking())
+    result = confirm_booking()
+    if "error" not in result and result.get("assistant_summary"):
+        append_assistant_message(result["assistant_summary"])
+    return _direct_response(result)

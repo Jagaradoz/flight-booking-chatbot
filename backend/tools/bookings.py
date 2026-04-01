@@ -10,6 +10,20 @@ def _generate_confirmation_code() -> str:
     return "BK" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
+def build_confirmation_summary(booking: dict) -> str:
+    confirmation_code = booking.get("confirmation_code", "Pending")
+    return (
+        "Your booking has been confirmed!\n\n"
+        f"**Confirmation Code: {confirmation_code}**\n\n"
+        f"- **Passenger:** {booking['passenger']['name']}\n"
+        f"- **Flight:** {booking['flight']['flight_id']} — {booking['flight']['origin']} → {booking['flight']['destination']}\n"
+        f"- **Date:** {booking['flight']['date']}\n"
+        f"- **Seat:** {booking['seat']}\n"
+        f"- **Total:** ${booking['pricing']['total']}\n\n"
+        "Thank you for booking with us!"
+    )
+
+
 def create_booking(passenger_name: str, passenger_email: str) -> dict:
     """Initialize a booking with passenger details."""
     flight = state.session.get("selected_flight")
@@ -84,6 +98,7 @@ def confirm_booking() -> dict:
         "message": f"Booking confirmed! Your confirmation code is {code}.",
         "confirmation_code": code,
         "passenger_email": booking["passenger"]["email"],
+        "assistant_summary": build_confirmation_summary(booking),
         "booking": booking,
     }
 

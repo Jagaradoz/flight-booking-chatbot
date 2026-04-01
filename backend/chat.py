@@ -59,6 +59,16 @@ FUNCTION_MAP = {
 conversation_history: list[dict] = []
 
 
+def ensure_conversation_initialized():
+    if not conversation_history:
+        conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
+
+
+def append_assistant_message(content: str):
+    ensure_conversation_initialized()
+    conversation_history.append({"role": "assistant", "content": content})
+
+
 def reset_conversation():
     global conversation_history
     conversation_history = []
@@ -86,8 +96,7 @@ def _execute_tool_call(tool_call) -> str:
 
 def chat(user_message: str) -> dict:
     """Process a user message and return the assistant's response with tool data."""
-    if not conversation_history:
-        conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
+    ensure_conversation_initialized()
 
     conversation_history.append({"role": "user", "content": user_message})
 

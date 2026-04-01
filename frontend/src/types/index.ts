@@ -10,6 +10,10 @@ export interface Flight {
   airline: string;
   origin: string;
   destination: string;
+  origin_display?: string;
+  destination_display?: string;
+  origin_airport?: string;
+  destination_airport?: string;
   departure_time: string;
   arrival_time: string;
   duration: string;

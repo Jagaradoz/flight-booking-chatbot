@@ -53,8 +53,11 @@ export function FlightTable({ flights, selectedFlightId, onBookFlight, disabled 
               <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-5">
                 <div className="space-y-1">
                   <div className="text-xs text-muted-foreground uppercase tracking-wide">From</div>
-                  <div className="text-lg sm:text-xl font-semibold text-foreground">{flight.origin}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{flight.departure_time}</div>
+                  <div className="text-base sm:text-lg font-semibold leading-tight text-foreground">{flight.origin_display ?? flight.origin}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{flight.origin_airport ?? flight.departure_time}</div>
+                  {flight.origin_airport && (
+                    <div className="text-xs sm:text-sm text-muted-foreground">Departs {flight.departure_time}</div>
+                  )}
                 </div>
                 <div className="flex items-center justify-center">
                   <div className="text-center space-y-1">
@@ -67,8 +70,11 @@ export function FlightTable({ flights, selectedFlightId, onBookFlight, disabled 
                 </div>
                 <div className="text-right space-y-1">
                   <div className="text-xs text-muted-foreground uppercase tracking-wide">To</div>
-                  <div className="text-lg sm:text-xl font-semibold text-foreground">{flight.destination}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{flight.arrival_time}</div>
+                  <div className="text-base sm:text-lg font-semibold leading-tight text-foreground">{flight.destination_display ?? flight.destination}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{flight.destination_airport ?? flight.arrival_time}</div>
+                  {flight.destination_airport && (
+                    <div className="text-xs sm:text-sm text-muted-foreground">Arrives {flight.arrival_time}</div>
+                  )}
                 </div>
               </div>
 

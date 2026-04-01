@@ -9,17 +9,18 @@ import { MessageSquare } from 'lucide-react';
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
+  streamingMessage: Message | null;
   bookingStep: 'search' | 'select' | 'customize' | 'book' | 'confirm';
 }
 
-export function ChatWindow({ messages, isLoading, bookingStep }: ChatWindowProps) {
+export function ChatWindow({ messages, isLoading, streamingMessage, bookingStep }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, streamingMessage]);
 
   return (
     <div className="flex-1 bg-muted/30 overflow-hidden relative">
@@ -47,6 +48,7 @@ Search flights, compare options, choose seats, add extras, and complete your boo
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+              {streamingMessage && <ChatMessage message={streamingMessage} isStreaming />}
               {isLoading && <LoadingIndicator />}
             </>
           </div>

@@ -1,15 +1,15 @@
-import { Avatar, AvatarFallback } from './ui/avatar';
-import { Bot } from 'lucide-react';
 import { Message } from '@/types';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { AssistantAvatar } from './AssistantAvatar';
 
 interface ChatMessageProps {
   message: Message;
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -20,11 +20,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       )}
     >
       {!isUser && (
-        <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
-          <AvatarFallback className="bg-slate-700">
-            <Bot className="h-5 w-5 sm:h-5 sm:w-5 text-white" />
-          </AvatarFallback>
-        </Avatar>
+        <AssistantAvatar />
       )}
 
       <div
@@ -36,6 +32,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
       >
         {isUser ? (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+        ) : isStreaming ? (
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
         ) : (
           <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:font-semibold prose-strong:text-foreground">

@@ -62,13 +62,22 @@ export function RightPanel({
   useEffect(() => {
     if (activeView) {
       setViewMode(activeView.view);
+      return;
     }
-  }, [activeView]);
+
+    if (bookingStep === 'search' || bookingStep === 'select') {
+      setViewMode('flights');
+    }
+  }, [activeView, bookingStep]);
+
+  const effectiveView = bookingStep === 'search' || bookingStep === 'select'
+    ? 'flights'
+    : viewMode;
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
-        {viewMode === 'flights' && (
+        {effectiveView === 'flights' && (
           <FlightTable
             flights={flights}
             selectedFlightId={selectedFlightId}
@@ -76,7 +85,7 @@ export function RightPanel({
             disabled={disabled}
           />
         )}
-        {viewMode === 'seats' && (
+        {effectiveView === 'seats' && (
           <SeatMap
             seatMap={seatMap}
             onSeatSelect={onSeatSelect}
@@ -86,7 +95,7 @@ export function RightPanel({
             onNext={onNextFromSeats}
           />
         )}
-        {viewMode === 'addons' && (
+        {effectiveView === 'addons' && (
           <AddOnsPanel
             baggage={baggage}
             mealPreference={mealPreference}
@@ -97,7 +106,7 @@ export function RightPanel({
             onNext={onNextFromAddOns}
           />
         )}
-        {viewMode === 'booking' && (
+        {effectiveView === 'booking' && (
           <BookingSummary
             booking={booking}
             showForm={bookingStep === 'customize' || bookingStep === 'book'}
