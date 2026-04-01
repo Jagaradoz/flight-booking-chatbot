@@ -1,154 +1,98 @@
 # Flight Booking Chatbot
-A conversational AI-powered flight booking system that transforms the traditional form-filling experience into natural, human-like conversations. Book flights, select seats, add baggage, and choose meals through simple chat interactions powered by OpenAI's GPT models.
 
-## Purpose
-Traditional flight booking websites overwhelm users with complex forms, dropdown menus, and multi-step processes. What if booking a flight could be as simple as texting a travel agent?
-
-This project explores whether conversational AI can simplify the flight booking experience by:
-
-**Natural Language Booking**: Replace rigid forms with flexible conversations where users describe their needs in their own words
-**Context-Aware Assistance**: Maintain conversation history so users don't have to repeat themselves
-**Intelligent Tool Use**: Leverage OpenAI's function calling to execute specific actions (search flights, select seats, process bookings) based on user intent
-**Flexible Workflows**: Allow users to skip optional steps or change their minds mid-conversation
-
-The goal isn't just to build a chatbot, but to demonstrate how AI agents can handle complex, multi-step workflows while maintaining a natural, user-friendly experience.
+A conversational AI flight booking system built on OpenAI function calling. Users book flights through natural chat instead of forms. The AI interprets intent, invokes the right tools, and guides the workflow from search to confirmation. All flight data is mock/in-memory.
 
 ## Features
-**Conversational Flight Search**: Natural language queries for finding flights by origin, destination, and date
 
-- Automatic airport code recognition
-- Intelligent date parsing
-- Multi-passenger support
-- Price and time filtering
+- **Conversational booking**: search, select, customize, and confirm entirely through chat
+- **Parallel UI**: right panel updates live from tool data — seat map, flight list, booking summary
+- **Optional steps**: seat selection, baggage, and meal preference can all be skipped
+- **Manual flow**: users can also click through the UI panels directly without chatting
+- **Mock data**: flights, seats, and airports are all static in-memory data — no real bookings
 
-**Interactive Seat Selection**: Choose seats through conversation or visual seat maps
+## Tools
 
-- Real-time seat availability
-- Seat type differentiation (Economy, Economy Plus, Business)
-- Window, aisle, and middle seat preferences
+The AI has access to 11 tools:
 
-**Flexible Add-ons**: Optional customization without mandatory steps
-
-- Checked baggage with dynamic pricing
-- Meal preferences (vegetarian, vegan, halal, etc.)
-- Skip any optional features seamlessly
-
-**Smart Booking Management**: End-to-end booking workflow with context awareness
-
-- Passenger information collection
-- Booking summary generation
-- Confirmation code creation
-- Email confirmation (simulated)
-
-**Multi-turn Conversations**: Context-aware dialogue that remembers previous interactions
-
-- Change selections mid-conversation
-- Ask follow-up questions
-- Natural error handling and clarifications
-
-## Table of Contents
-- [Flight Booking Chatbot](#flight-booking-chatbot)
-  - [Purpose](#purpose)
-  - [Features](#features)
-  - [Table of Contents](#table-of-contents)
-  - [Tech Stack](#tech-stack)
-  - [Project Structure](#project-structure)
-  - [Usage](#usage)
-  - [API Documentation](#api-documentation)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
+| Tool | Purpose |
+|------|---------|
+| `search_flights` | Find flights by origin, destination, and date |
+| `filter_flights` | Narrow last search results by price, airline, or time |
+| `get_flight_details` | Get full details for a specific flight |
+| `select_flight` | Mark a flight as selected for booking |
+| `get_seat_map` | Load available seats for a flight |
+| `select_seat` | Reserve a specific seat |
+| `add_baggage` | Set number of checked bags |
+| `set_meal_preference` | Set in-flight meal preference |
+| `create_booking` | Create a booking with passenger details |
+| `confirm_booking` | Finalize and generate a confirmation code |
+| `get_booking_summary` | Show current booking or selection state |
 
 ## Tech Stack
 
 | Technology | Role |
 |------------|------|
-| Python 3.8+ | Backend language |
+| Python 3.10+ | Backend language |
 | FastAPI | REST API framework |
-| OpenAI API | GPT-4/GPT-3.5 for natural language understanding |
-| React | Frontend framework |
+| OpenAI API (`gpt-4.1-mini`) | Natural language understanding and tool calling |
+| TypeScript + React 18 | Frontend |
 | Vite | Build tool and dev server |
-| TailwindCSS | Styling and responsive design |
-| Lucide React | Icon library |
-| Axios | HTTP client for API calls |
+| TailwindCSS | Styling |
+| shadcn/ui | Component primitives |
+| react-markdown | Markdown rendering for chat messages |
+| Lucide React | Icons |
+| Axios | HTTP client |
 
 ## Project Structure
 
 ```
 flight-booking-chatbot/
-├── backend/                           # Python FastAPI backend
-│   ├── tools/                         # Tool functions for flight operations
-│   └── data/                          # Mock data and database
-└── frontend/                          # React frontend
+├── backend/
+│   ├── ai/                # OpenAI chat loop and tool definitions
+│   ├── api/               # FastAPI routers (chat, flights, seats, addons, bookings, system)
+│   ├── domain/            # Tool function implementations
+│   ├── data/              # Mock flight, seat, and airport data
+└── frontend/
     └── src/
-        └── components/                # React components
+        ├── app/           # Root App component and layout
+        ├── features/      # Feature modules (chat, flights, seats, addons, bookings, trip-panel)
+        └── shared/        # API client, UI primitives, utilities
 ```
 
-**Data Flow:**
-1. User types message → Frontend sends to backend
-2. Backend receives message → Adds to conversation history
-3. Backend calls OpenAI → Sends message + available tools
-4. OpenAI analyzes → Decides which tool(s) to call
-5. Backend executes tools → Runs functions, gets results
-6. Backend sends results to OpenAI → AI formulates response
-7. Backend returns response → Frontend displays to user
+## Booking Flow
 
-## Usage
+**Select → Customize → Book → Confirm**
 
-**Basic Flight Search:**
-```
-"I need to fly from Bangkok to Tokyo on April 15th"
-"Find me flights from LAX to JFK next Monday"
-"Show me flights to Paris for 2 passengers"
-```
+Works via chat or manual UI interaction:
+- **Select**: search for flights, pick one
+- **Customize**: choose a seat, add baggage, set meal preference (all optional)
+- **Book**: enter passenger name and email
+- **Confirm**: review summary and confirm to get a confirmation code
 
-**Seat Selection:**
-```
-"I'd like a window seat"
-"Can I get seat 12A?"
-"Show me available seats in business class"
-```
-
-**Add-ons:**
-```
-"Add 2 checked bags"
-"I need a vegetarian meal"
-"Add baggage and select a window seat"
-```
-
-**Booking:**
-```
-"My name is John Smith, email john@example.com"
-"Confirm the booking"
-"What's my total price?"
-```
-
-## API Documentation
+## API
 
 **Base URL:** `http://localhost:8000`
 
-### Endpoints
-
-**POST /api/chat**
-- Send a message to the chatbot
-- Request body: `{ "message": "string" }`
-- Response: `{ "response": "string", "status": "success" }`
-
-**POST /api/reset**
-- Clear conversation history and start fresh
-- Response: `{ "message": "Conversation reset", "status": "success" }`
-
-**GET /api/health**
-- Check server status
-- Response: `{ "status": "healthy" }`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/chat` | Send a message; returns `{ response, tool_data, status }` |
+| `POST` | `/api/reset` | Reset conversation and session state |
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/flights` | List all available flights |
+| `POST` | `/api/seat-map` | Get seat map for a flight |
+| `POST` | `/api/select-seat` | Select a seat |
+| `POST` | `/api/add-baggage` | Set checked bag count |
+| `POST` | `/api/set-meal` | Set meal preference |
+| `POST` | `/api/create-booking` | Create a booking |
+| `POST` | `/api/confirm-booking` | Confirm a booking |
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Python 3.8+**
-- **Node.js 16+** and npm
-- **OpenAI API Key** - Get one at [platform.openai.com](https://platform.openai.com)
+- Python 3.10+
+- Node.js 16+ and npm
+- OpenAI API key — [platform.openai.com](https://platform.openai.com)
 
 ### Installation
 
@@ -173,23 +117,16 @@ flight-booking-chatbot/
    # OPENAI_API_KEY=sk-your-api-key-here
    ```
 
-4. **Start the backend server:**
+4. **Start the backend:**
    ```bash
    uvicorn main:app --reload --port 8000
    ```
-   Backend will run at `http://localhost:8000`
 
-5. **Set up the frontend (in a new terminal):**
+5. **Set up and start the frontend (new terminal):**
    ```bash
    cd frontend
    npm install
-   ```
-
-6. **Start the frontend development server:**
-   ```bash
    npm run dev
    ```
-   Frontend will run at `http://localhost:5173`
 
-7. **Open your browser:**
-   Navigate to `http://localhost:5173` and start chatting!
+6. Open `http://localhost:5173` and start chatting.
