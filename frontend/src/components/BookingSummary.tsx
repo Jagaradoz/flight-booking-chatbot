@@ -20,7 +20,8 @@ export function BookingSummary({ booking, showForm, isConfirming, disabled, onBa
   const [email, setEmail] = useState('');
 
   if (!booking && showForm) {
-    const canSubmit = name.trim().length > 0 && email.trim().length > 0 && !disabled;
+    const isValidEmail = email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    const canSubmit = name.trim().length > 0 && isValidEmail && !disabled;
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();

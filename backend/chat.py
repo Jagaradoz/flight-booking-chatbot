@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -12,7 +13,10 @@ from tools.bookings import create_booking, confirm_booking, get_booking_summary
 
 load_dotenv()
 
-MODEL = "gpt-4.1-mini"
+logger = logging.getLogger(__name__)
+
+MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+MAX_TOOL_ITERATIONS = 10
 
 _client: OpenAI | None = None
 
@@ -79,17 +83,20 @@ def _execute_tool_call(tool_call) -> str:
     func = FUNCTION_MAP.get(func_name)
 
     if not func:
+        logger.warning("Unknown tool call requested: %s", func_name)
         return json.dumps({"error": f"Unknown function: {func_name}"})
 
     try:
         args = json.loads(tool_call.function.arguments)
     except json.JSONDecodeError:
+        logger.error("Failed to parse arguments for %s", func_name)
         return json.dumps({"error": "Failed to parse function arguments."})
 
     try:
         result = func(**args)
-    except Exception as e:
-        result = {"error": str(e)}
+    except Exception:
+        logger.exception("Error executing tool %s", func_name)
+        result = {"error": f"Tool '{func_name}' encountered an internal error."}
 
     return json.dumps(result)
 
@@ -102,7 +109,7 @@ def chat(user_message: str) -> dict:
 
     tool_data: list[dict] = []
 
-    while True:
+    for iteration in range(MAX_TOOL_ITERATIONS):
         response = _get_client().chat.completions.create(
             model=MODEL,
             messages=conversation_history,
@@ -132,3 +139,6 @@ def chat(user_message: str) -> dict:
                 })
         else:
             return {"text": message.content, "tool_data": tool_data}
+
+    logger.warning("Tool loop hit max iterations (%d) for message: %s", MAX_TOOL_ITERATIONS, user_message[:100])
+    return {"text": "I'm sorry, I wasn't able to complete that request. Please try again.", "tool_data": tool_data}

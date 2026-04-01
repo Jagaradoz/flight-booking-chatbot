@@ -61,6 +61,7 @@ export function ChatInput({ onSendMessage, isBusy, focusRequestKey = 0, resetReq
           onClick={handleSend}
           disabled={isBusy || !inputValue.trim()}
           size="icon"
+          aria-label="Send message"
           className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
         >
           <Send className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 
 from data.airports import get_airport_info
@@ -7,7 +7,8 @@ import state
 
 
 def _generate_confirmation_code() -> str:
-    return "BK" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    chars = string.ascii_uppercase + string.digits
+    return "BK" + "".join(secrets.choice(chars) for _ in range(6))
 
 
 def build_confirmation_summary(booking: dict) -> str:
@@ -45,14 +46,17 @@ def create_booking(passenger_name: str, passenger_email: str) -> dict:
     origin_info = get_airport_info(flight["origin"])
     dest_info = get_airport_info(flight["destination"])
 
+    origin_city = origin_info["city"] if origin_info else flight["origin"]
+    dest_city = dest_info["city"] if dest_info else flight["destination"]
+
     booking = {
         "status": "pending",
         "passenger": {"name": passenger_name, "email": passenger_email},
         "flight": {
             "flight_id": flight["flight_id"],
             "airline": flight["airline"],
-            "origin": f"{origin_info['city']} ({flight['origin']})",
-            "destination": f"{dest_info['city']} ({flight['destination']})",
+            "origin": f"{origin_city} ({flight['origin']})",
+            "destination": f"{dest_city} ({flight['destination']})",
             "date": flight["date"],
             "departure_time": flight["departure_time"],
             "arrival_time": flight["arrival_time"],

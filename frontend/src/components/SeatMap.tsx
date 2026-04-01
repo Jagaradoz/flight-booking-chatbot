@@ -98,6 +98,9 @@ export function SeatMap({ seatMap, onSeatSelect, selectedSeatId, disabled, onBac
                         key={seat.seat_id}
                         onClick={() => !seat.occupied && !disabled && onSeatSelect?.(seat.seat_id)}
                         disabled={seat.occupied || disabled}
+                        aria-label={`Seat ${seat.seat_id}, ${seat.section} ${seat.type}${seat.extra_cost > 0 ? `, plus $${seat.extra_cost}` : ''}${seat.occupied ? ', occupied' : ''}${seat.seat_id === selectedSeatId ? ', selected' : ''}`}
+                        aria-selected={seat.seat_id === selectedSeatId}
+                        aria-disabled={seat.occupied || disabled}
                         className={`w-9 h-9 sm:w-10 sm:h-10 text-xs font-medium border rounded transition-colors ${getSeatColor(seat)}`}
                         title={`${seat.seat_id} - ${seat.section} - ${seat.type} ${seat.extra_cost > 0 ? `+$${seat.extra_cost}` : ''}`}
                       >

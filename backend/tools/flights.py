@@ -133,8 +133,8 @@ def get_flight_details(flight_id: str) -> dict:
     if not flight:
         return {"error": f"Flight {flight_id} not found."}
 
-    origin_info = get_airport_info(flight["origin"])
-    dest_info = get_airport_info(flight["destination"])
+    origin_info = get_airport_info(flight["origin"]) or {"name": flight["origin"], "city": flight["origin"], "country": "Unknown"}
+    dest_info = get_airport_info(flight["destination"]) or {"name": flight["destination"], "city": flight["destination"], "country": "Unknown"}
 
     return {
         "flight_id": flight["flight_id"],
